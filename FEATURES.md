@@ -320,14 +320,14 @@ CREATE OR REPLACE FUNCTION update_daily_streak(
 
 ## Submission History
 
-### Status: 🚧 Planned
+### Status: ✅ Complete
 
 ### Purpose
 Display user's code submission history with filtering, code viewing, and performance metrics.
 
 ### Database Schema
-- **Table:** `public.submissions` (already exists)
-- **Table:** `public.user_problem_progress` (already exists)
+- **Table:** `public.submissions` (columns: id, user_id, problem_id, language, code, status, runtime, memory, test_cases_passed, total_test_cases, points_earned, solve_time_seconds, error_message, submitted_at)
+- **Table:** `public.user_problem_progress` (tracks best runtime, best memory, attempts)
 
 ### API Functions
 
@@ -337,53 +337,115 @@ Display user's code submission history with filtering, code viewing, and perform
 - Fetches user submissions with pagination
 - Joins with problems table for problem details
 - Supports filters: problem, language, status, date range
+- Returns submissions array and hasMore flag
 
 **`getSubmissionById(submissionId, userId)`**
 - Fetches single submission with full details
 - Includes problem info and test results
+- Enforces user ownership via RLS
 
 **`getSubmissionStats(userId)`**
 - Returns submission statistics
-- Total submissions, acceptance rate, languages used
-- Best/worst performing problems
+  - Total submissions, acceptance rate
+  - Languages used, total points earned, average points
 
-**`compareSubmissions(submissionId1, submissionId2)`**
-- Returns diff between two submissions
-- Used for code comparison
+**`getProblemSubmissions(userId, problemId)`**
+- Gets all submissions for a specific problem
+- Useful for tracking improvement over attempts
+
+**`getRecentSubmissions(userId)`**
+- Fetches last 10 submissions
+- Used for dashboard recent activity
+
+**`compareSubmissions(submissionId1, submissionId2, userId)`**
+- Returns two submissions for comparison
+- Validates both belong to user
+
+**Helper Functions:**
+- `getLanguagesUsed(userId)` - Returns unique languages
+- `getProblemsAttempted(userId)` - Returns unique problem IDs
+
+### Server Actions
+
+#### `app/submissions/actions.ts`
+
+**`fetchMoreSubmissions(userId, page, filters)`**
+- Server action for pagination
+- Applies filters and returns next page of submissions
 
 ### UI Components
 
 #### Pages
-- `app/submissions/page.tsx` - Submission history page (server component)
-- `app/submissions/SubmissionsClient.tsx` - Client component with filters
+- **`app/submissions/page.tsx`** - Server component
+  - Fetches initial data (submissions, stats, languages)
+  - Handles authentication check
+  - Passes data to client component
+
+- **`app/submissions/SubmissionsClient.tsx`** - Client component
+  - Filter state management
+  - Pagination with "Load More" button
+  - Loading states and empty states
 
 #### Components
-- `components/submissions/SubmissionCard.tsx` - Individual submission card
-- `components/submissions/SubmissionFilters.tsx` - Filter controls
-- `components/submissions/CodeViewer.tsx` - Code display with syntax highlighting
-- `components/submissions/SubmissionStats.tsx` - Statistics overview
+- **`components/submissions/SubmissionCard.tsx`**
+  - Displays submission with metrics
+  - Status badge with color coding
+  - Expandable code viewer
+  - "Solve Again" link to problem
+  - Metrics: test cases, runtime, memory, points, solve time
+  
+- **`components/submissions/SubmissionFilters.tsx`**
+  - Filter controls: language, status, date range
+  - Clear all filters button
+  - Disabled state during loading
+  
+- **`components/submissions/CodeViewer.tsx`**
+  - Syntax-highlighted code display
+  - Language badge
+  - Copy code functionality
+  
+- **`components/submissions/SubmissionStatsDisplay.tsx`**
+  - Overview statistics cards
+  - Total submissions, accepted, acceptance rate
+  - Total points earned, languages used
 
-### Features
-- **Filtering:** By problem, language, status, date range
-- **Pagination:** Load more button or infinite scroll
-- **Code Viewing:** Syntax-highlighted code display
-- **Performance Metrics:** Runtime, memory usage charts
-- **Status Badges:** Color-coded status indicators
-- **Code Comparison:** Diff view between attempts
+### Features Implemented
+- ✅ **Filtering:** By language, status, date range (from/to)
+- ✅ **Pagination:** Load more button with loading states
+- ✅ **Code Viewing:** Inline expandable code viewer
+- ✅ **Performance Metrics:** Runtime, memory, solve time display
+- ✅ **Status Badges:** Color-coded for each status type
+- ✅ **Points Display:** Shows points earned per submission
+- ✅ **Empty States:** Helpful messages when no submissions found
+- ✅ **Responsive Design:** Mobile-friendly grid layouts
 
 ### Submission Card Display
 ```
-┌─────────────────────────────────────────┐
-│ Two Sum                    Accepted ✓   │
-│ JavaScript | 2 hours ago               │
-│                                         │
-│ Runtime: 82ms | Memory: 42.1MB         │
-│ Points Earned: 25                       │
-│ Test Cases: 15/15 passed               │
-│                                         │
-│ [View Code] [Compare]                  │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ Two Sum                         Accepted ✓       │
+│ Easy • Array • JavaScript • 2 hours ago          │
+│                                                  │
+│ ┌─────────┐ ┌────────┐ ┌────────┐ ┌─────────┐  │
+│ │ 15/15   │ │ 82ms   │ │ 42.1MB │ │ +25 pts │  │
+│ │ Tests   │ │ Runtime│ │ Memory │ │ Points  │  │
+│ └─────────┘ └────────┘ └────────┘ └─────────┘  │
+│                                                  │
+│ [View Code]  [Solve Again]                      │
+└──────────────────────────────────────────────────┘
 ```
+
+### Status Color Coding
+- **Accepted:** Green (bg-green-500/20)
+- **Wrong Answer:** Red (bg-red-500/20)
+- **Time Limit Exceeded:** Orange (bg-orange-500/20)
+- **Runtime Error:** Red (bg-red-500/20)
+- **Compilation Error:** Purple (bg-purple-500/20)
+- **Pending:** Gray (bg-gray-500/20)
+
+### Route
+- **URL:** `/submissions`
+- **Protected:** Yes (requires authentication)
+- **Redirects to:** `/auth/login` if not authenticated
 
 ---
 

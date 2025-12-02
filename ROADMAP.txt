@@ -65,22 +65,25 @@ CORE FEATURES (Phase 2)
     - Parallel test case execution
     - Error handling (compilation errors, runtime errors, timeouts)
 
-12. [ ] Submission History
+12. ✓ Submission History
     - Store user submissions in database (schema ready)
     - Display submission results (passed/failed)
     - Code history and versioning
     - Performance metrics
+    - Filtering by language, status, date range
+    - Statistics overview
 
-13. [ ] Points and Scoring System
-    - Award points based on difficulty
-    - Time-based bonuses
+13. ✓ Points and Scoring System
+    - Award points based on difficulty (Easy: 10-30, Medium: 40-60, Hard: 70-100)
+    - Time-based bonuses (25% first attempt, 10% fast solve)
     - Update user stats after submissions
-    - Leaderboard calculation
+    - Transaction-safe database functions
+    - Points earned display in UI
 
 14. [ ] Streak Tracking
     - Daily activity tracking
     - Streak calculation logic
-    - Streak recovery grace period
+    - Streak recovery grace period (1-day buffer)
     - Visual streak calendar
 
 PRACTICE & CHALLENGES (Phase 3)
