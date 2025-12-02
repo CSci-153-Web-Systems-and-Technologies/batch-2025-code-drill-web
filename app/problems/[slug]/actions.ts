@@ -40,7 +40,7 @@ function wrapCodeForExecution(language: string, code: string, problemSlug: strin
 
 // Generate C++ wrapper with main() function based on problem
 function wrapCppCode(userCode: string, problemSlug: string): string {
-  // Add necessary headers if not present
+  // Add comprehensive C++ headers if not already present
   let wrappedCode = '';
   
   if (!userCode.includes('#include')) {
@@ -48,6 +48,15 @@ function wrapCppCode(userCode: string, problemSlug: string): string {
     wrappedCode += '#include <vector>\n';
     wrappedCode += '#include <string>\n';
     wrappedCode += '#include <sstream>\n';
+    wrappedCode += '#include <unordered_map>\n';
+    wrappedCode += '#include <unordered_set>\n';
+    wrappedCode += '#include <map>\n';
+    wrappedCode += '#include <set>\n';
+    wrappedCode += '#include <queue>\n';
+    wrappedCode += '#include <stack>\n';
+    wrappedCode += '#include <algorithm>\n';
+    wrappedCode += '#include <climits>\n';
+    wrappedCode += '#include <cmath>\n';
     wrappedCode += 'using namespace std;\n\n';
   }
   
