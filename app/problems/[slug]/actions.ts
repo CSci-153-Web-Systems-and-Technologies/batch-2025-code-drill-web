@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { calculatePoints, type Difficulty } from '@/lib/scoring';
+import { updateDailyStreak } from '@/lib/streaks';
 
 interface TestCase {
   input: string;
@@ -606,6 +607,30 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
           console.error('Error updating user stats:', updateError);
         }
       }
+
+      // Update daily streak after successful submission
+      const streakResult = await updateDailyStreak(user.id);
+      
+      if (streakResult.success) {
+        console.log('Streak updated:', {
+          currentStreak: streakResult.currentStreak,
+          longestStreak: streakResult.longestStreak,
+          gracePeriodUsed: streakResult.gracePeriodUsed,
+        });
+      }
+
+      return {
+        success: true,
+        results,
+        status,
+        pointsEarned,
+        pointsBreakdown,
+        streakInfo: streakResult.success ? {
+          currentStreak: streakResult.currentStreak,
+          longestStreak: streakResult.longestStreak,
+          gracePeriodUsed: streakResult.gracePeriodUsed,
+        } : undefined,
+      };
     } else {
       // If not accepted, still record an attempt for analytics if RPC exists
       const { error: attemptErr } = await supabase.rpc('increment_problem_attempts', {
@@ -615,15 +640,15 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       if (attemptErr && attemptErr.code !== 'PGRST202') {
         console.warn('increment_problem_attempts RPC error:', attemptErr.message);
       }
-    }
 
-    return {
-      success: true,
-      results,
-      status,
-      pointsEarned,
-      pointsBreakdown,
-    };
+      return {
+        success: true,
+        results,
+        status,
+        pointsEarned,
+        pointsBreakdown,
+      };
+    }
   } catch (error) {
     console.error('Error submitting code:', error);
     return {

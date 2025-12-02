@@ -5,6 +5,9 @@ import WeeklyGoal from '@/components/shared/WeeklyGoal';
 import SkillProgress from '@/components/shared/SkillProgress';
 import RankCard from '@/components/shared/RankCard';
 import Challenges from '@/components/shared/Challenges';
+import { StreakWarning } from '@/components/streaks/StreakWarning';
+import { StreakStats } from '@/components/streaks/StreakStats';
+import { StreakCalendar } from '@/components/streaks/StreakCalendar';
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
@@ -62,6 +65,9 @@ export default async function Home() {
         </Button>
       </div>
 
+      {/* Streak Warning */}
+      <StreakWarning />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <StatCard
@@ -112,11 +118,13 @@ export default async function Home() {
         <div className="lg:col-span-2 space-y-6">
           <WeeklyGoal current={7} goal={10} />
           <SkillProgress skills={skills} />
+          <StreakCalendar />
         </div>
 
         {/* Right Column - Rank & Challenges */}
         <div className="space-y-6">
           <RankCard rank={12} />
+          <StreakStats />
           <Challenges challenges={challenges} />
         </div>
       </div>
