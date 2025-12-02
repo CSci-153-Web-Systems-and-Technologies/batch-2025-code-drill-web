@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getUserStreakAction, type StreakInfo } from '@/app/streaks/actions';
-import { formatStreak, getStreakEmoji, isStreakAtRisk } from '@/lib/streaks';
+import { getUserStreakAction } from '@/app/streaks/actions';
+import { formatStreak, getStreakEmoji, isStreakAtRisk, type StreakInfo } from '@/lib/streaks-utils';
 
 export function StreakStats() {
   const [streakInfo, setStreakInfo] = useState<StreakInfo | null>(null);

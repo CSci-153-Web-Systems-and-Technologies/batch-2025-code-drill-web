@@ -1,14 +1,9 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import type { StreakInfo } from '@/lib/streaks-utils';
 
-export interface StreakInfo {
-  currentStreak: number;
-  longestStreak: number;
-  lastActiveDate: string | null;
-  gracePeriodUsed: boolean;
-  daysSinceLastActivity: number;
-}
+export type { StreakInfo };
 
 /**
  * Get current streak information for a user (Server Action)
