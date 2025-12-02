@@ -29,11 +29,213 @@ const LANGUAGE_IDS: Record<string, number> = {
   cpp: 54, // C++ (GCC 9.2.0)
 };
 
+// Wrap user code with boilerplate to create a complete executable program
+function wrapCodeForExecution(language: string, code: string, problemSlug: string): string {
+  if (language === 'cpp') {
+    return wrapCppCode(code, problemSlug);
+  }
+  // For other languages, return code as-is for now
+  return code;
+}
+
+// Generate C++ wrapper with main() function based on problem
+function wrapCppCode(userCode: string, problemSlug: string): string {
+  // Add necessary headers if not present
+  let wrappedCode = '';
+  
+  if (!userCode.includes('#include')) {
+    wrappedCode += '#include <iostream>\n';
+    wrappedCode += '#include <vector>\n';
+    wrappedCode += '#include <string>\n';
+    wrappedCode += '#include <sstream>\n';
+    wrappedCode += 'using namespace std;\n\n';
+  }
+  
+  wrappedCode += userCode + '\n\n';
+  
+  // Add main() function based on problem signature
+  switch (problemSlug) {
+    case 'two-sum':
+      wrappedCode += `
+int main() {
+    Solution solution;
+    string line;
+    getline(cin, line);
+    
+    // Parse input: "[2,7,11,15], 9"
+    size_t commaPos = line.find("], ");
+    string arrStr = line.substr(1, commaPos - 1);
+    int target = stoi(line.substr(commaPos + 3));
+    
+    vector<int> nums;
+    stringstream ss(arrStr);
+    string num;
+    while (getline(ss, num, ',')) {
+        nums.push_back(stoi(num));
+    }
+    
+    vector<int> result = solution.twoSum(nums, target);
+    cout << "[" << result[0] << "," << result[1] << "]" << endl;
+    
+    return 0;
+}`;
+      break;
+      
+    case 'palindrome-number':
+      wrappedCode += `
+int main() {
+    Solution solution;
+    int x;
+    cin >> x;
+    cout << (solution.isPalindrome(x) ? "true" : "false") << endl;
+    return 0;
+}`;
+      break;
+      
+    case 'reverse-string':
+      wrappedCode += `
+int main() {
+    Solution solution;
+    string line;
+    getline(cin, line);
+    
+    // Parse input: ["h","e","l","l","o"]
+    vector<char> s;
+    for (size_t i = 0; i < line.length(); i++) {
+        if (line[i] == '"' && i + 1 < line.length() && line[i + 2] == '"') {
+            s.push_back(line[i + 1]);
+        }
+    }
+    
+    solution.reverseString(s);
+    
+    cout << "[";
+    for (size_t i = 0; i < s.size(); i++) {
+        cout << "\\"" << s[i] << "\\"";
+        if (i < s.size() - 1) cout << ",";
+    }
+    cout << "]" << endl;
+    
+    return 0;
+}`;
+      break;
+      
+    case 'valid-parentheses':
+      wrappedCode += `
+int main() {
+    Solution solution;
+    string s;
+    getline(cin, s);
+    cout << (solution.isValid(s) ? "true" : "false") << endl;
+    return 0;
+}`;
+      break;
+      
+    case 'maximum-subarray':
+      wrappedCode += `
+int main() {
+    Solution solution;
+    string line;
+    getline(cin, line);
+    
+    // Parse input: "[-2,1,-3,4,-1,2,1,-5,4]"
+    vector<int> nums;
+    stringstream ss(line.substr(1, line.length() - 2));
+    string num;
+    while (getline(ss, num, ',')) {
+        nums.push_back(stoi(num));
+    }
+    
+    cout << solution.maxSubArray(nums) << endl;
+    return 0;
+}`;
+      break;
+      
+    case 'longest-substring-without-repeating-characters':
+      wrappedCode += `
+int main() {
+    Solution solution;
+    string s;
+    getline(cin, s);
+    cout << solution.lengthOfLongestSubstring(s) << endl;
+    return 0;
+}`;
+      break;
+      
+    case 'median-of-two-sorted-arrays':
+      wrappedCode += `
+int main() {
+    Solution solution;
+    string line;
+    getline(cin, line);
+    
+    // Parse input: "[1,3], [2]"
+    size_t splitPos = line.find("], [");
+    string arr1Str = line.substr(1, splitPos - 1);
+    string arr2Str = line.substr(splitPos + 4, line.length() - splitPos - 5);
+    
+    vector<int> nums1, nums2;
+    
+    if (!arr1Str.empty()) {
+        stringstream ss1(arr1Str);
+        string num;
+        while (getline(ss1, num, ',')) {
+            nums1.push_back(stoi(num));
+        }
+    }
+    
+    if (!arr2Str.empty()) {
+        stringstream ss2(arr2Str);
+        string num;
+        while (getline(ss2, num, ',')) {
+            nums2.push_back(stoi(num));
+        }
+    }
+    
+    double result = solution.findMedianSortedArrays(nums1, nums2);
+    cout << fixed;
+    cout.precision(5);
+    cout << result << endl;
+    return 0;
+}`;
+      break;
+      
+    case 'regular-expression-matching':
+      wrappedCode += `
+int main() {
+    Solution solution;
+    string line;
+    getline(cin, line);
+    
+    // Parse input: "aa, a*"
+    size_t commaPos = line.find(", ");
+    string s = line.substr(0, commaPos);
+    string p = line.substr(commaPos + 2);
+    
+    cout << (solution.isMatch(s, p) ? "true" : "false") << endl;
+    return 0;
+}`;
+      break;
+      
+    default:
+      // Generic wrapper - assumes simple input/output
+      wrappedCode += `
+int main() {
+    Solution solution;
+    // Add your main function implementation here
+    return 0;
+}`;
+  }
+  
+  return wrappedCode;
+}
+
 // Function to execute code using Judge0 API
 async function executeWithJudge0(
   language: string,
   code: string,
-  input: string
+  input: string,
+  problemSlug: string = ''
 ): Promise<{ output: string; error?: string; status?: string }> {
   const JUDGE0_API_URL = process.env.JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.com';
   const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
@@ -47,6 +249,9 @@ async function executeWithJudge0(
     throw new Error(`Unsupported language: ${language}`);
   }
 
+  // Wrap code with necessary boilerplate (especially for C++)
+  const executableCode = wrapCodeForExecution(language, code, problemSlug);
+
   try {
     // Submit code for execution
     const submitResponse = await fetch(
@@ -59,7 +264,7 @@ async function executeWithJudge0(
           'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
         },
         body: JSON.stringify({
-          source_code: Buffer.from(code).toString('base64'),
+          source_code: Buffer.from(executableCode).toString('base64'),
           language_id: languageId,
           stdin: Buffer.from(input).toString('base64'),
         }),
@@ -136,10 +341,20 @@ async function executeWithJudge0(
 
 export async function runCode({ problemId, language, code, testCases }: RunCodeParams) {
   try {
+    // Get problem slug from problemId
+    const supabase = await createClient();
+    const { data: problem } = await supabase
+      .from('problems')
+      .select('slug')
+      .eq('id', problemId)
+      .single();
+    
+    const problemSlug = problem?.slug || '';
+    
     // Execute all test cases in parallel
     const executionPromises = testCases.map(async (testCase) => {
       try {
-        const result = await executeWithJudge0(language, code, testCase.input);
+        const result = await executeWithJudge0(language, code, testCase.input, problemSlug);
         
         if (result.error) {
           return {
@@ -206,7 +421,7 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
     // Get problem with all test cases and difficulty
     const { data: problem } = await supabase
       .from('problems')
-      .select('example_test_cases, hidden_test_cases, difficulty')
+      .select('example_test_cases, hidden_test_cases, difficulty, slug')
       .eq('id', problemId)
       .single();
 
@@ -232,7 +447,7 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
     // Execute all test cases in parallel using Judge0 API
     const executionPromises = allTestCases.map(async (testCase) => {
       try {
-        const result = await executeWithJudge0(language, code, testCase.input);
+        const result = await executeWithJudge0(language, code, testCase.input, problem.slug);
         
         if (result.error) {
           return {

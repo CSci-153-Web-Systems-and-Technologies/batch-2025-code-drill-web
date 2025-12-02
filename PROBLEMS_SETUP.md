@@ -196,7 +196,7 @@ Output: [0,1]
 - -10^9 <= nums[i] <= 10^9
 - -10^9 <= target <= 10^9
 - Only one valid answer exists.',
-  '{"javascript": "function twoSum(nums, target) {\n    // Write your code here\n}", "python": "def twoSum(nums, target):\n    # Write your code here\n    pass", "java": "class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        // Write your code here\n    }\n}", "cpp": "class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        // Write your code here\n    }\n};"}'::jsonb
+  '{"javascript": "function twoSum(nums, target) {\n    // Write your code here\n}", "python": "def twoSum(nums, target):\n    # Write your code here\n    pass", "java": "class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        // Write your code here\n    }\n}", "cpp": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        // Write your code here\n    }\n};"}'::jsonb
 ),
 (
   'Palindrome Number',
@@ -254,7 +254,7 @@ Output: ["h","a","n","n","a","H"]
   '[{"input": "[\"h\",\"e\",\"l\",\"l\",\"o\"]", "output": "[\"o\",\"l\",\"l\",\"e\",\"h\"]"}, {"input": "[\"H\",\"a\",\"n\",\"n\",\"a\",\"h\"]", "output": "[\"h\",\"a\",\"n\",\"n\",\"a\",\"H\"]"}]'::jsonb,
   '- 1 <= s.length <= 10^5
 - s[i] is a printable ascii character.',
-  '{"javascript": "function reverseString(s) {\n    // Write your code here\n}", "python": "def reverseString(s):\n    # Write your code here\n    pass", "java": "class Solution {\n    public void reverseString(char[] s) {\n        // Write your code here\n    }\n}", "cpp": "class Solution {\npublic:\n    void reverseString(vector<char>& s) {\n        // Write your code here\n    }\n};"}'::jsonb
+  '{"javascript": "function reverseString(s) {\n    // Write your code here\n}", "python": "def reverseString(s):\n    # Write your code here\n    pass", "java": "class Solution {\n    public void reverseString(char[] s) {\n        // Write your code here\n    }\n}", "cpp": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    void reverseString(vector<char>& s) {\n        // Write your code here\n    }\n};"}'::jsonb
 ),
 (
   'Valid Parentheses',
@@ -289,7 +289,7 @@ Output: false
   '[{"input": "()", "output": "true"}, {"input": "()[]{}", "output": "true"}, {"input": "(]", "output": "false"}]'::jsonb,
   '- 1 <= s.length <= 10^4
 - s consists of parentheses only ''()[]{}''.',
-  '{"javascript": "function isValid(s) {\n    // Write your code here\n}", "python": "def isValid(s):\n    # Write your code here\n    pass", "java": "class Solution {\n    public boolean isValid(String s) {\n        // Write your code here\n    }\n}", "cpp": "class Solution {\npublic:\n    bool isValid(string s) {\n        // Write your code here\n    }\n};"}'::jsonb
+  '{"javascript": "function isValid(s) {\n    // Write your code here\n}", "python": "def isValid(s):\n    # Write your code here\n    pass", "java": "class Solution {\n    public boolean isValid(String s) {\n        // Write your code here\n    }\n}", "cpp": "#include <string>\nusing namespace std;\n\nclass Solution {\npublic:\n    bool isValid(string s) {\n        // Write your code here\n    }\n};"}'::jsonb
 ),
 (
   'Merge Two Sorted Lists',
@@ -324,7 +324,7 @@ Output: [0]
   '- The number of nodes in both lists is in the range [0, 50].
 - -100 <= Node.val <= 100
 - Both list1 and list2 are sorted in non-decreasing order.',
-  '{"javascript": "function mergeTwoLists(list1, list2) {\n    // Write your code here\n}", "python": "def mergeTwoLists(list1, list2):\n    # Write your code here\n    pass", "java": "class Solution {\n    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {\n        // Write your code here\n    }\n}", "cpp": "class Solution {\npublic:\n    ListNode* mergeTwoLists(ListNode* list1, ListNode* list2) {\n        // Write your code here\n    }\n};"}'::jsonb
+  '{"javascript": "function mergeTwoLists(list1, list2) {\n    // Write your code here\n}", "python": "def mergeTwoLists(list1, list2):\n    # Write your code here\n    pass", "java": "class Solution {\n    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {\n        // Write your code here\n    }\n}", "cpp": "struct ListNode {\n    int val;\n    ListNode *next;\n    ListNode() : val(0), next(nullptr) {}\n    ListNode(int x) : val(x), next(nullptr) {}\n    ListNode(int x, ListNode *next) : val(x), next(next) {}\n};\n\nclass Solution {\npublic:\n    ListNode* mergeTwoLists(ListNode* list1, ListNode* list2) {\n        // Write your code here\n    }\n};"}'::jsonb
 ),
 (
   'Maximum Subarray',
@@ -357,7 +357,7 @@ Explanation: The subarray [5,4,-1,7,8] has the largest sum 23.
   '[{"input": "[-2,1,-3,4,-1,2,1,-5,4]", "output": "6"}, {"input": "[1]", "output": "1"}, {"input": "[5,4,-1,7,8]", "output": "23"}]'::jsonb,
   '- 1 <= nums.length <= 10^5
 - -10^4 <= nums[i] <= 10^4',
-  '{"javascript": "function maxSubArray(nums) {\n    // Write your code here\n}", "python": "def maxSubArray(nums):\n    # Write your code here\n    pass", "java": "class Solution {\n    public int maxSubArray(int[] nums) {\n        // Write your code here\n    }\n}", "cpp": "class Solution {\npublic:\n    int maxSubArray(vector<int>& nums) {\n        // Write your code here\n    }\n};"}'::jsonb
+  '{"javascript": "function maxSubArray(nums) {\n    // Write your code here\n}", "python": "def maxSubArray(nums):\n    # Write your code here\n    pass", "java": "class Solution {\n    public int maxSubArray(int[] nums) {\n        // Write your code here\n    }\n}", "cpp": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int maxSubArray(vector<int>& nums) {\n        // Write your code here\n    }\n};"}'::jsonb
 ),
 (
   'Binary Tree Level Order Traversal',
@@ -387,7 +387,7 @@ Output: []
   '[{"input": "[3,9,20,null,null,15,7]", "output": "[[3],[9,20],[15,7]]"}, {"input": "[1]", "output": "[[1]]"}, {"input": "[]", "output": "[]"}]'::jsonb,
   '- The number of nodes in the tree is in the range [0, 2000].
 - -1000 <= Node.val <= 1000',
-  '{"javascript": "function levelOrder(root) {\n    // Write your code here\n}", "python": "def levelOrder(root):\n    # Write your code here\n    pass", "java": "class Solution {\n    public List<List<Integer>> levelOrder(TreeNode root) {\n        // Write your code here\n    }\n}", "cpp": "class Solution {\npublic:\n    vector<vector<int>> levelOrder(TreeNode* root) {\n        // Write your code here\n    }\n};"}'::jsonb
+  '{"javascript": "function levelOrder(root) {\n    // Write your code here\n}", "python": "def levelOrder(root):\n    # Write your code here\n    pass", "java": "class Solution {\n    public List<List<Integer>> levelOrder(TreeNode root) {\n        // Write your code here\n    }\n}", "cpp": "#include <vector>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode *left;\n    TreeNode *right;\n    TreeNode() : val(0), left(nullptr), right(nullptr) {}\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}\n};\n\nclass Solution {\npublic:\n    vector<vector<int>> levelOrder(TreeNode* root) {\n        // Write your code here\n    }\n};"}'::jsonb
 ),
 (
   'Longest Substring Without Repeating Characters',
@@ -420,7 +420,7 @@ Explanation: The answer is "wke", with the length of 3.
   '[{"input": "abcabcbb", "output": "3"}, {"input": "bbbbb", "output": "1"}, {"input": "pwwkew", "output": "3"}]'::jsonb,
   '- 0 <= s.length <= 5 * 10^4
 - s consists of English letters, digits, symbols and spaces.',
-  '{"javascript": "function lengthOfLongestSubstring(s) {\n    // Write your code here\n}", "python": "def lengthOfLongestSubstring(s):\n    # Write your code here\n    pass", "java": "class Solution {\n    public int lengthOfLongestSubstring(String s) {\n        // Write your code here\n    }\n}", "cpp": "class Solution {\npublic:\n    int lengthOfLongestSubstring(string s) {\n        // Write your code here\n    }\n};"}'::jsonb
+  '{"javascript": "function lengthOfLongestSubstring(s) {\n    // Write your code here\n}", "python": "def lengthOfLongestSubstring(s):\n    # Write your code here\n    pass", "java": "class Solution {\n    public int lengthOfLongestSubstring(String s) {\n        // Write your code here\n    }\n}", "cpp": "#include <string>\nusing namespace std;\n\nclass Solution {\npublic:\n    int lengthOfLongestSubstring(string s) {\n        // Write your code here\n    }\n};"}'::jsonb
 ),
 (
   'Median of Two Sorted Arrays',
@@ -452,7 +452,7 @@ Explanation: merged array = [1,2,3,4] and median is (2 + 3) / 2 = 2.5.
 - 0 <= n <= 1000
 - 1 <= m + n <= 2000
 - -10^6 <= nums1[i], nums2[i] <= 10^6',
-  '{"javascript": "function findMedianSortedArrays(nums1, nums2) {\n    // Write your code here\n}", "python": "def findMedianSortedArrays(nums1, nums2):\n    # Write your code here\n    pass", "java": "class Solution {\n    public double findMedianSortedArrays(int[] nums1, int[] nums2) {\n        // Write your code here\n    }\n}", "cpp": "class Solution {\npublic:\n    double findMedianSortedArrays(vector<int>& nums1, vector<int>& nums2) {\n        // Write your code here\n    }\n};"}'::jsonb
+  '{"javascript": "function findMedianSortedArrays(nums1, nums2) {\n    // Write your code here\n}", "python": "def findMedianSortedArrays(nums1, nums2):\n    # Write your code here\n    pass", "java": "class Solution {\n    public double findMedianSortedArrays(int[] nums1, int[] nums2) {\n        // Write your code here\n    }\n}", "cpp": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    double findMedianSortedArrays(vector<int>& nums1, vector<int>& nums2) {\n        // Write your code here\n    }\n};"}'::jsonb
 ),
 (
   'Regular Expression Matching',
@@ -493,7 +493,7 @@ Explanation: ".*" means "zero or more (*) of any character (.)".
 - s contains only lowercase English letters.
 - p contains only lowercase English letters, ''.'', and ''*''.
 - It is guaranteed for each appearance of the character ''*'', there will be a previous valid character to match.',
-  '{"javascript": "function isMatch(s, p) {\n    // Write your code here\n}", "python": "def isMatch(s, p):\n    # Write your code here\n    pass", "java": "class Solution {\n    public boolean isMatch(String s, String p) {\n        // Write your code here\n    }\n}", "cpp": "class Solution {\npublic:\n    bool isMatch(string s, string p) {\n        // Write your code here\n    }\n};"}'::jsonb
+  '{"javascript": "function isMatch(s, p) {\n    // Write your code here\n}", "python": "def isMatch(s, p):\n    # Write your code here\n    pass", "java": "class Solution {\n    public boolean isMatch(String s, String p) {\n        // Write your code here\n    }\n}", "cpp": "#include <string>\nusing namespace std;\n\nclass Solution {\npublic:\n    bool isMatch(string s, string p) {\n        // Write your code here\n    }\n};"}'::jsonb
 );
 ```
 
