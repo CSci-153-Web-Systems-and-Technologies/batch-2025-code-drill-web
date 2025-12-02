@@ -30,7 +30,7 @@ export async function createPracticeSession(config: PracticeSessionConfig) {
 
   if (sessionError || !session) {
     console.error('Error creating practice session:', sessionError);
-    return { error: 'Failed to create practice session' };
+    return { error: sessionError?.message || 'Failed to create practice session' };
   }
 
   // Get random problems based on filters

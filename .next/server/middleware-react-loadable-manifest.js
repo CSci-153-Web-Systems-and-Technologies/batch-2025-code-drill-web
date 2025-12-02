@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{\"app/problems/[slug]/ProblemDetailClient.tsx -> @/components/editor/CodeEditor\":{\"id\":\"app/problems/[slug]/ProblemDetailClient.tsx -> @/components/editor/CodeEditor\",\"files\":[\"static/chunks/_app-pages-browser_components_editor_CodeEditor_tsx.js\"]}}"
+self.__REACT_LOADABLE_MANIFEST="{}"
