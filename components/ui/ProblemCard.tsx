@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 interface ProblemCardProps {
   title: string;
   description: string;
@@ -7,6 +9,7 @@ interface ProblemCardProps {
   solvedCount: number;
   accuracy: number;
   points: number;
+  slug?: string;
 }
 
 export default function ProblemCard({
@@ -18,6 +21,7 @@ export default function ProblemCard({
   solvedCount,
   accuracy,
   points,
+  slug,
 }: ProblemCardProps) {
   const difficultyColors = {
     Easy: 'bg-green-100 text-green-700',
@@ -81,12 +85,24 @@ export default function ProblemCard({
         </div>
 
         {/* Solve Button */}
-        <button className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
-          Solve
-        </button>
+        {slug ? (
+          <Link
+            href={`/problems/${slug}`}
+            className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Solve
+          </Link>
+        ) : (
+          <button className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Solve
+          </button>
+        )}
       </div>
     </div>
   );
