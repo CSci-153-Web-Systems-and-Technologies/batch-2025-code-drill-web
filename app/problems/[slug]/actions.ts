@@ -543,12 +543,24 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
 
     // If the new columns do not exist yet, retry without them
     if (insertError && insertError.code === 'PGRST204') {
+      // Retry without new columns (schema not yet migrated)
       const fallbackRes = await supabase.from('submissions').insert(basePayload);
       if (fallbackRes.error) {
         console.error('Error saving submission (fallback):', fallbackRes.error);
       }
     } else if (insertError) {
-      console.error('Error saving submission:', insertError);
+      // If another constraint fails, try a minimal payload one last time
+      const minimalPayload = {
+        user_id: user.id,
+        problem_id: problemId,
+        language,
+        code,
+        status,
+      };
+      const minimalRes = await supabase.from('submissions').insert(minimalPayload);
+      if (minimalRes.error) {
+        console.error('Error saving submission (minimal):', minimalRes.error);
+      }
     }
 
     // Update user stats if submission passed
@@ -573,6 +585,15 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
         } else {
           console.error('Error updating user stats:', updateError);
         }
+      }
+    } else {
+      // If not accepted, still record an attempt for analytics if RPC exists
+      const { error: attemptErr } = await supabase.rpc('increment_problem_attempts', {
+        p_user_id: user.id,
+        p_problem_id: problemId,
+      });
+      if (attemptErr && attemptErr.code !== 'PGRST202') {
+        console.warn('increment_problem_attempts RPC error:', attemptErr.message);
       }
     }
 
