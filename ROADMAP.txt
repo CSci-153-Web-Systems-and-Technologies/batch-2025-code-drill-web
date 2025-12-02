@@ -219,11 +219,71 @@ PRACTICE & CHALLENGES (Phase 3)
     
     NOTE: Practice sessions provide risk-free environment for skill building
 
-16. [ ] Weekly Challenges
-    - Create challenges table
-    - Challenge submission tracking
-    - Participant count and rankings
-    - Challenge completion badges
+16. [✅] Weekly Challenges
+    ✅ COMPLETED (feature/weekly-challenges branch)
+    
+    IMPLEMENTATION:
+    - Database schema (supabase/migrations/20241202_challenges.sql):
+      * challenges table: title, description, difficulty, problem_id, 
+        start/end dates, max_points, status (upcoming/active/completed)
+      * challenge_participants table: tracks user enrollments, completion status,
+        scores, and leaderboard rankings
+      * challenge_submissions table: links submissions to challenges, tracks points,
+        identifies best submissions
+      * RLS policies for public read, authenticated write
+      * Indexes for performance optimization
+    
+    - Database RPCs:
+      * update_challenge_status(): Auto-transitions challenges based on dates
+      * update_challenge_ranks(): Calculates leaderboard positions
+      * record_challenge_submission(): Records submission, updates scores, 
+        recalculates ranks, handles first completion detection
+    
+    - Types (types/challenge.ts):
+      * Challenge, ChallengeParticipant, ChallengeSubmission interfaces
+      * ChallengeWithProblem, ChallengeWithStats extended types
+      * ChallengeLeaderboardEntry for rankings display
+    
+    - Server actions (app/challenges/actions.ts):
+      * getChallenges(): Fetch with filtering by status (active/upcoming/completed)
+      * getChallengeById(): Single challenge with stats and user participation
+      * joinChallenge(): Enroll user in challenge
+      * getChallengeLeaderboard(): Top 100 ranked participants
+      * getActiveChallenges(): For dashboard widget (top 3)
+      * updateChallengeStatuses(): Manual status refresh trigger
+    
+    - Pages:
+      * /challenges: Browse challenges with tabs (Active/Upcoming/Completed/All),
+        participant counts, time remaining display, completion badges
+      * /challenges/[id]: Challenge detail with description, problem link,
+        leaderboard (top 100 with medals for top 3), join button,
+        progress tracking, tips sidebar
+    
+    - Components:
+      * ActiveChallenges (Dashboard): Shows top 3 active challenges,
+        time remaining, participant counts, completion status,
+        join buttons, "View All" link
+    
+    - Navigation:
+      * Added "Challenges" link to Header between Practice and Professor Exams
+    
+    - Dashboard Integration:
+      * Replaced static Challenges component with ActiveChallenges widget
+      * Real-time data from database
+      * Shows user participation and completion status
+    
+    FEATURES:
+    - Time-limited weekly challenges (customizable duration)
+    - Live leaderboard with rankings (top 3 get medals 🥇🥈🥉)
+    - Participant tracking and completion badges
+    - Points-based scoring system
+    - Multiple submissions allowed (best score counts)
+    - Auto-status transitions based on dates
+    - Filterable challenge list (active/upcoming/completed)
+    - User progress tracking (joined/completed status)
+    - Challenge info cards with participant stats
+    
+    NOTE: Foundation for competitive features and community engagement
 
 17. [ ] Skills Progress Tracking
     - Track problems solved by category
