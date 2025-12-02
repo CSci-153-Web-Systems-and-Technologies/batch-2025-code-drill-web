@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getUserStreak, formatStreak, getStreakEmoji, type StreakInfo } from '@/lib/streaks';
-import { createClient } from '@/lib/supabase/client';
+import { getUserStreakAction, type StreakInfo } from '@/app/streaks/actions';
+import { formatStreak, getStreakEmoji } from '@/lib/streaks';
 
 export function StreakDisplay() {
   const [streakInfo, setStreakInfo] = useState<StreakInfo | null>(null);
@@ -10,15 +10,12 @@ export function StreakDisplay() {
 
   useEffect(() => {
     async function fetchStreak() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const info = await getUserStreakAction();
       
-      if (!user) {
+      if (!info) {
         setLoading(false);
         return;
       }
-
-      const info = await getUserStreak(user.id);
       setStreakInfo(info);
       setLoading(false);
     }

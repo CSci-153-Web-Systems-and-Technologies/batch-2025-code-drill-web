@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getStreakCalendar } from '@/lib/streaks';
-import { createClient } from '@/lib/supabase/client';
+import { getStreakCalendarAction } from '@/app/streaks/actions';
 
 interface CalendarDay {
   date: string;
@@ -15,15 +14,7 @@ export function StreakCalendar() {
 
   useEffect(() => {
     async function fetchCalendar() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const data = await getStreakCalendar(user.id);
+      const data = await getStreakCalendarAction();
       setCalendarData(data);
       setLoading(false);
     }

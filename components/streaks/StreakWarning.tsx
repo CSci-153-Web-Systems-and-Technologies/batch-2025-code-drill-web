@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getUserStreak, isStreakAtRisk, type StreakInfo } from '@/lib/streaks';
-import { createClient } from '@/lib/supabase/client';
+import { getUserStreakAction, type StreakInfo } from '@/app/streaks/actions';
+import { isStreakAtRisk } from '@/lib/streaks';
 
 export function StreakWarning() {
   const [streakInfo, setStreakInfo] = useState<StreakInfo | null>(null);
@@ -10,12 +10,7 @@ export function StreakWarning() {
 
   useEffect(() => {
     async function fetchStreak() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return;
-
-      const info = await getUserStreak(user.id);
+      const info = await getUserStreakAction();
       setStreakInfo(info);
       
       if (info && isStreakAtRisk(info) && info.currentStreak > 0) {
