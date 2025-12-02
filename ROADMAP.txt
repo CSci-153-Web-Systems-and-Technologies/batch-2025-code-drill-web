@@ -40,7 +40,9 @@ IMMEDIATE NEXT STEPS (Phase 1)
    - Create problems table in Supabase
    - Add difficulty levels, categories, tags
    - Create sample problem data (10 problems ready in PROBLEMS_SETUP.md)
-   - Set up RLS policies
+    - Set up RLS policies
+    - C++ starter code updated with required headers and structs (vector, string, ListNode, TreeNode) in PROBLEMS_SETUP.md; helper script UPDATE_CPP_HEADERS.sql added
+    - Reminder: After running scoring/streak migrations in SCORING_SETUP.md, reload API cache with SELECT pg_notify('pgrst', 'reload schema');
 
 9. ✓ Problems Listing Page Enhancement
    - Connect to Supabase problems table
@@ -64,6 +66,9 @@ CORE FEATURES (Phase 2)
     - Support for multiple languages (JavaScript, Python, Java, C++)
     - Parallel test case execution
     - Error handling (compilation errors, runtime errors, timeouts)
+    - C++ execution wrappers with auto-generated main() via app/problems/[slug]/actions.ts (wrapCodeForExecution, wrapCppCode)
+    - Per-problem C++ wrappers implemented: two-sum, palindrome-number, reverse-string, valid-parentheses, maximum-subarray, longest-substring-without-repeating-characters, median-of-two-sorted-arrays, regular-expression-matching
+    - TODO: Add C++ wrappers for merge-two-sorted-lists and binary-tree-level-order-traversal (linked list/tree parsing + output formatting)
 
 12. ✓ Submission History
     - Store user submissions in database (schema ready)
