@@ -52,6 +52,7 @@ export default function Header() {
   const navItems = [
     { name: 'Dashboard', href: '/', icon: 'dashboard' },
     { name: 'Problems', href: '/problems', icon: 'code' },
+    { name: 'Practice', href: '/practice', icon: 'play' },
     { name: 'Professor Exams', href: '/exams', icon: 'exam' },
     { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy' },
     { name: 'Community', href: '/community', icon: 'users' },
