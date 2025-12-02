@@ -1,4 +1,4 @@
-'use server';
+  'use server';
 
 import { createClient } from '@/lib/supabase/server';
 
@@ -28,17 +28,151 @@ const LANGUAGE_IDS: Record<string, number> = {
   cpp: 54, // C++ (GCC 9.2.0)
 };
 
+// Function to execute code using Judge0 API
+async function executeWithJudge0(
+  language: string,
+  code: string,
+  input: string
+): Promise<{ output: string; error?: string; status?: string }> {
+  const JUDGE0_API_URL = process.env.JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.com';
+  const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
+
+  if (!JUDGE0_API_KEY) {
+    throw new Error('Judge0 API key not configured');
+  }
+
+  const languageId = LANGUAGE_IDS[language];
+  if (!languageId) {
+    throw new Error(`Unsupported language: ${language}`);
+  }
+
+  try {
+    // Submit code for execution
+    const submitResponse = await fetch(
+      `${JUDGE0_API_URL}/submissions?base64_encoded=true&wait=false`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-RapidAPI-Key': JUDGE0_API_KEY,
+          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+        },
+        body: JSON.stringify({
+          source_code: Buffer.from(code).toString('base64'),
+          language_id: languageId,
+          stdin: Buffer.from(input).toString('base64'),
+        }),
+      }
+    );
+
+    if (!submitResponse.ok) {
+      throw new Error(`Judge0 submission failed: ${submitResponse.statusText}`);
+    }
+
+    const { token } = await submitResponse.json();
+
+    // Poll for results
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const resultResponse = await fetch(
+        `${JUDGE0_API_URL}/submissions/${token}?base64_encoded=true`,
+        {
+          headers: {
+            'X-RapidAPI-Key': JUDGE0_API_KEY,
+            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+          },
+        }
+      );
+
+      if (!resultResponse.ok) {
+        throw new Error(`Judge0 result fetch failed: ${resultResponse.statusText}`);
+      }
+
+      const result = await resultResponse.json();
+
+      // Status IDs: 1-2 = In Queue/Processing, 3 = Accepted, 4+ = Various errors
+      if (result.status.id > 2) {
+        // Completed
+        const output = result.stdout
+          ? Buffer.from(result.stdout, 'base64').toString().trim()
+          : '';
+        
+        let error: string | undefined;
+        
+        // Check for compilation errors
+        if (result.compile_output) {
+          error = Buffer.from(result.compile_output, 'base64').toString();
+        }
+        // Check for runtime errors
+        else if (result.stderr) {
+          error = Buffer.from(result.stderr, 'base64').toString();
+        }
+        // Check for other error statuses
+        else if (result.status.id !== 3) {
+          error = result.status.description || 'Unknown error';
+        }
+
+        return { 
+          output, 
+          error,
+          status: result.status.description
+        };
+      }
+
+      attempts++;
+    }
+
+    throw new Error('Execution timeout');
+  } catch (error) {
+    console.error('Judge0 execution error:', error);
+    throw error;
+  }
+}
+
 export async function runCode({ problemId, language, code, testCases }: RunCodeParams) {
   try {
-    // For now, return mock results
-    // TODO: Integrate with Judge0 API
-    const results = testCases.map((testCase, index) => ({
-      input: testCase.input,
-      expectedOutput: testCase.output,
-      actualOutput: testCase.output, // Mock: always pass for now
-      passed: true,
-      error: undefined,
-    }));
+    // Execute all test cases in parallel
+    const executionPromises = testCases.map(async (testCase) => {
+      try {
+        const result = await executeWithJudge0(language, code, testCase.input);
+        
+        if (result.error) {
+          return {
+            input: testCase.input,
+            expectedOutput: testCase.output,
+            actualOutput: result.output || '',
+            passed: false,
+            error: result.error,
+          };
+        }
+
+        const expectedOutput = testCase.output.trim();
+        const actualOutput = result.output.trim();
+        const passed = expectedOutput === actualOutput;
+
+        return {
+          input: testCase.input,
+          expectedOutput: testCase.output,
+          actualOutput: result.output,
+          passed,
+          error: undefined,
+        };
+      } catch (error) {
+        return {
+          input: testCase.input,
+          expectedOutput: testCase.output,
+          actualOutput: '',
+          passed: false,
+          error: error instanceof Error ? error.message : 'Execution failed',
+        };
+      }
+    });
+
+    const results = await Promise.all(executionPromises);
 
     return {
       success: true,
@@ -83,18 +217,54 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       ...(problem.hidden_test_cases || []),
     ];
 
-    // For now, return mock results
-    // TODO: Integrate with Judge0 API to run against all test cases
-    const results = allTestCases.map((testCase) => ({
-      input: testCase.input,
-      expectedOutput: testCase.output,
-      actualOutput: testCase.output, // Mock: always pass for now
-      passed: true,
-      error: undefined,
-    }));
+    // Execute all test cases in parallel using Judge0 API
+    const executionPromises = allTestCases.map(async (testCase) => {
+      try {
+        const result = await executeWithJudge0(language, code, testCase.input);
+        
+        if (result.error) {
+          return {
+            input: testCase.input,
+            expectedOutput: testCase.output,
+            actualOutput: result.output || '',
+            passed: false,
+            error: result.error,
+          };
+        }
+
+        const expectedOutput = testCase.output.trim();
+        const actualOutput = result.output.trim();
+        const passed = expectedOutput === actualOutput;
+
+        return {
+          input: testCase.input,
+          expectedOutput: testCase.output,
+          actualOutput: result.output,
+          passed,
+          error: undefined,
+        };
+      } catch (error) {
+        return {
+          input: testCase.input,
+          expectedOutput: testCase.output,
+          actualOutput: '',
+          passed: false,
+          error: error instanceof Error ? error.message : 'Execution failed',
+        };
+      }
+    });
+
+    const results = await Promise.all(executionPromises);
 
     const allPassed = results.every((r) => r.passed);
-    const status = allPassed ? 'Accepted' : 'Wrong Answer';
+    const hasCompilationError = results.some((r) => r.error && r.error.includes('error'));
+    
+    let status = 'Accepted';
+    if (hasCompilationError) {
+      status = 'Compilation Error';
+    } else if (!allPassed) {
+      status = 'Wrong Answer';
+    }
 
     // Save submission to database
     const { error: insertError } = await supabase.from('submissions').insert({
@@ -145,81 +315,5 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       results: [],
       error: 'Failed to submit code',
     };
-  }
-}
-
-// Function to execute code using Judge0 API (for future implementation)
-async function executeWithJudge0(
-  language: string,
-  code: string,
-  input: string
-): Promise<{ output: string; error?: string }> {
-  const JUDGE0_API_URL = process.env.JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.com';
-  const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
-
-  if (!JUDGE0_API_KEY) {
-    throw new Error('Judge0 API key not configured');
-  }
-
-  const languageId = LANGUAGE_IDS[language];
-  if (!languageId) {
-    throw new Error(`Unsupported language: ${language}`);
-  }
-
-  try {
-    // Submit code for execution
-    const submitResponse = await fetch(`${JUDGE0_API_URL}/submissions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-RapidAPI-Key': JUDGE0_API_KEY,
-        'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-      },
-      body: JSON.stringify({
-        source_code: Buffer.from(code).toString('base64'),
-        language_id: languageId,
-        stdin: Buffer.from(input).toString('base64'),
-      }),
-    });
-
-    const { token } = await submitResponse.json();
-
-    // Poll for results
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    while (attempts < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const resultResponse = await fetch(`${JUDGE0_API_URL}/submissions/${token}`, {
-        headers: {
-          'X-RapidAPI-Key': JUDGE0_API_KEY,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-        },
-      });
-
-      const result = await resultResponse.json();
-
-      if (result.status.id > 2) {
-        // Completed
-        const output = result.stdout
-          ? Buffer.from(result.stdout, 'base64').toString()
-          : '';
-        const error = result.stderr
-          ? Buffer.from(result.stderr, 'base64').toString()
-          : result.compile_output
-          ? Buffer.from(result.compile_output, 'base64').toString()
-          : undefined;
-
-        return { output: output.trim(), error };
-      }
-
-      attempts++;
-    }
-
-    throw new Error('Execution timeout');
-  } catch (error) {
-    console.error('Judge0 execution error:', error);
-    throw error;
   }
 }
