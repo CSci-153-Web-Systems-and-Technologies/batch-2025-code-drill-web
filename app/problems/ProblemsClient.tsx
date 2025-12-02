@@ -7,6 +7,7 @@ import Dropdown from '@/components/ui/Dropdown';
 import ProblemStats from '@/components/shared/ProblemStats';
 import ProblemCard from '@/components/ui/ProblemCard';
 import { Problem, DifficultyLevel } from '@/types';
+import { fetchMoreProblems } from './actions';
 
 interface ProblemsClientProps {
   initialProblems: Problem[];
@@ -29,6 +30,9 @@ export default function ProblemsClient({
   const [selectedDifficulty, setSelectedDifficulty] = useState('All Difficulties');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(initialProblems.length >= 20);
+  const [error, setError] = useState<string | null>(null);
 
   const difficultyOptions = ['All Difficulties', 'Easy', 'Medium', 'Hard'];
   const categoryOptions = ['All Categories', ...categories];
@@ -74,6 +78,43 @@ export default function ProblemsClient({
         return 25;
       default:
         return 10;
+    }
+  };
+
+  // Load more problems from server
+  const handleLoadMore = async () => {
+    if (loading || !hasMore) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const filters = {
+        difficulty:
+          selectedDifficulty !== 'All Difficulties'
+            ? (selectedDifficulty as DifficultyLevel)
+            : undefined,
+        category:
+          selectedCategory !== 'All Categories' ? selectedCategory : undefined,
+        search: searchQuery || undefined,
+      };
+
+      const result = await fetchMoreProblems(currentPage + 1, filters);
+
+      if (result.success && result.problems) {
+        setProblems((prev) => [...prev, ...result.problems]);
+        setCurrentPage((prev) => prev + 1);
+        setHasMore(result.hasMore);
+      } else {
+        setError(result.error || 'Failed to load more problems');
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error('Error loading more problems:', err);
+      setError('An unexpected error occurred');
+      setHasMore(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -147,18 +188,44 @@ export default function ProblemsClient({
         )}
       </div>
 
-      {/* Load More Button - Hidden for now */}
-      {filteredProblems.length >= 20 && (
+      {/* Load More Button */}
+      {hasMore && filteredProblems.length >= 20 && (
         <div className="mt-8 text-center">
+          {error && (
+            <p className="text-red-600 text-sm mb-2">{error}</p>
+          )}
           <button
-            onClick={() => {
-              // TODO: Implement pagination
-              console.log('Load more problems');
-            }}
+            onClick={handleLoadMore}
             disabled={loading}
-            className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
           >
-            {loading ? 'Loading...' : 'Load More Problems'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg
+                  className="animate-spin h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Loading...
+              </span>
+            ) : (
+              'Load More Problems'
+            )}
           </button>
         </div>
       )}
