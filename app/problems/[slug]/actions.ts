@@ -518,8 +518,8 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       pointsEarned = pointsBreakdown.totalPoints;
     }
 
-    // Save submission to database
-    const { error: insertError } = await supabase.from('submissions').insert({
+    // Save submission to database with backward-compatible fallbacks
+    const basePayload: any = {
       user_id: user.id,
       problem_id: problemId,
       language,
@@ -527,11 +527,27 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       status,
       test_cases_passed: results.filter((r) => r.passed).length,
       total_test_cases: results.length,
-      points_earned: pointsEarned,
-      solve_time_seconds: solveTimeSeconds,
-    });
+    };
 
-    if (insertError) {
+    // Try with extended fields first (new schema)
+    let insertError: any | null = null;
+    {
+      const extendedPayload = {
+        ...basePayload,
+        points_earned: pointsEarned,
+        solve_time_seconds: solveTimeSeconds,
+      };
+      const res = await supabase.from('submissions').insert(extendedPayload);
+      insertError = res.error;
+    }
+
+    // If the new columns do not exist yet, retry without them
+    if (insertError && insertError.code === 'PGRST204') {
+      const fallbackRes = await supabase.from('submissions').insert(basePayload);
+      if (fallbackRes.error) {
+        console.error('Error saving submission (fallback):', fallbackRes.error);
+      }
+    } else if (insertError) {
       console.error('Error saving submission:', insertError);
     }
 
@@ -550,8 +566,13 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
         }
       );
 
+      // If the RPC isn't deployed yet, skip without failing the request
       if (updateError) {
-        console.error('Error updating user stats:', updateError);
+        if (updateError.code === 'PGRST202') {
+          console.warn('update_user_stats RPC not found (skipping):', updateError.message);
+        } else {
+          console.error('Error updating user stats:', updateError);
+        }
       }
     }
 
