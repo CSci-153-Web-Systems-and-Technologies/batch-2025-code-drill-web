@@ -1,6 +1,7 @@
   'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { calculatePoints, type Difficulty } from '@/lib/scoring';
 
 interface TestCase {
   input: string;
@@ -190,6 +191,7 @@ export async function runCode({ problemId, language, code, testCases }: RunCodeP
 
 export async function submitCode({ problemId, language, code }: SubmitCodeParams) {
   const supabase = await createClient();
+  const submissionStartTime = Date.now();
 
   try {
     // Get the current user
@@ -201,16 +203,26 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       throw new Error('User not authenticated');
     }
 
-    // Get problem with all test cases
+    // Get problem with all test cases and difficulty
     const { data: problem } = await supabase
       .from('problems')
-      .select('example_test_cases, hidden_test_cases')
+      .select('example_test_cases, hidden_test_cases, difficulty')
       .eq('id', problemId)
       .single();
 
     if (!problem) {
       throw new Error('Problem not found');
     }
+
+    // Check if user has attempted this problem before
+    const { data: existingProgress } = await supabase
+      .from('user_problem_progress')
+      .select('status, attempts')
+      .eq('user_id', user.id)
+      .eq('problem_id', problemId)
+      .single();
+
+    const isFirstAttempt = !existingProgress || existingProgress.attempts === 0;
 
     const allTestCases = [
       ...(problem.example_test_cases || []),
@@ -266,6 +278,22 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       status = 'Wrong Answer';
     }
 
+    // Calculate solve time in seconds
+    const solveTimeSeconds = Math.floor((Date.now() - submissionStartTime) / 1000);
+
+    // Calculate points if submission passed
+    let pointsEarned = 0;
+    let pointsBreakdown = null;
+
+    if (allPassed) {
+      pointsBreakdown = calculatePoints(
+        problem.difficulty as Difficulty,
+        isFirstAttempt,
+        solveTimeSeconds
+      );
+      pointsEarned = pointsBreakdown.totalPoints;
+    }
+
     // Save submission to database
     const { error: insertError } = await supabase.from('submissions').insert({
       user_id: user.id,
@@ -275,31 +303,31 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       status,
       test_cases_passed: results.filter((r) => r.passed).length,
       total_test_cases: results.length,
+      points_earned: pointsEarned,
+      solve_time_seconds: solveTimeSeconds,
     });
 
     if (insertError) {
       console.error('Error saving submission:', insertError);
     }
 
-    // Update user_problem_progress
+    // Update user stats if submission passed
     if (allPassed) {
-      const { error: progressError } = await supabase
-        .from('user_problem_progress')
-        .upsert(
-          {
-            user_id: user.id,
-            problem_id: problemId,
-            status: 'Solved',
-            solved_at: new Date().toISOString(),
-            attempts: 1, // TODO: Increment existing attempts
-          },
-          {
-            onConflict: 'user_id,problem_id',
-          }
-        );
+      const { data: updateResult, error: updateError } = await supabase.rpc(
+        'update_user_stats',
+        {
+          p_user_id: user.id,
+          p_problem_id: problemId,
+          p_points_earned: pointsEarned,
+          p_difficulty: problem.difficulty,
+          p_runtime: null, // TODO: Get from Judge0 response
+          p_memory: null, // TODO: Get from Judge0 response
+          p_is_first_solve: isFirstAttempt,
+        }
+      );
 
-      if (progressError) {
-        console.error('Error updating progress:', progressError);
+      if (updateError) {
+        console.error('Error updating user stats:', updateError);
       }
     }
 
@@ -307,6 +335,8 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       success: true,
       results,
       status,
+      pointsEarned,
+      pointsBreakdown,
     };
   } catch (error) {
     console.error('Error submitting code:', error);
