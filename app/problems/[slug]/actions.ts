@@ -261,9 +261,23 @@ async function executeWithJudge0(
   // Wrap code with necessary boilerplate (especially for C++)
   const executableCode = wrapCodeForExecution(language, code, problemSlug);
 
+  // Helper: fetch with exponential backoff on 429
+  async function fetchWithBackoff(url: string, options: RequestInit, maxRetries = 3) {
+    let attempt = 0;
+    let delayMs = 1000;
+    while (true) {
+      const res = await fetch(url, options);
+      if (res.status !== 429) return res;
+      if (attempt >= maxRetries) return res;
+      await new Promise((r) => setTimeout(r, delayMs));
+      attempt++;
+      delayMs = Math.min(delayMs * 2, 8000);
+    }
+  }
+
   try {
     // Submit code for execution
-    const submitResponse = await fetch(
+    const submitResponse = await fetchWithBackoff(
       `${JUDGE0_API_URL}/submissions?base64_encoded=true&wait=false`,
       {
         method: 'POST',
@@ -281,6 +295,9 @@ async function executeWithJudge0(
     );
 
     if (!submitResponse.ok) {
+      if (submitResponse.status === 429) {
+        return { output: '', error: 'Service busy — please retry in a few seconds.', status: 'Too Many Requests' };
+      }
       throw new Error(`Judge0 submission failed: ${submitResponse.statusText}`);
     }
 
@@ -293,7 +310,7 @@ async function executeWithJudge0(
     while (attempts < maxAttempts) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const resultResponse = await fetch(
+      const resultResponse = await fetchWithBackoff(
         `${JUDGE0_API_URL}/submissions/${token}?base64_encoded=true`,
         {
           headers: {
@@ -304,6 +321,9 @@ async function executeWithJudge0(
       );
 
       if (!resultResponse.ok) {
+        if (resultResponse.status === 429) {
+          return { output: '', error: 'Service busy — please retry in a few seconds.', status: 'Too Many Requests' };
+        }
         throw new Error(`Judge0 result fetch failed: ${resultResponse.statusText}`);
       }
 
@@ -360,44 +380,44 @@ export async function runCode({ problemId, language, code, testCases }: RunCodeP
     
     const problemSlug = problem?.slug || '';
     
-    // Execute all test cases in parallel
-    const executionPromises = testCases.map(async (testCase) => {
+    // Execute test cases sequentially to avoid Judge0 rate-limit bursts
+    const results: Array<{ input: string; expectedOutput: string; actualOutput: string; passed: boolean; error?: string; }> = [];
+    for (const testCase of testCases) {
       try {
         const result = await executeWithJudge0(language, code, testCase.input, problemSlug);
         
         if (result.error) {
-          return {
+          results.push({
             input: testCase.input,
             expectedOutput: testCase.output,
             actualOutput: result.output || '',
             passed: false,
             error: result.error,
-          };
+          });
+          continue;
         }
 
         const expectedOutput = testCase.output.trim();
         const actualOutput = result.output.trim();
         const passed = expectedOutput === actualOutput;
 
-        return {
+        results.push({
           input: testCase.input,
           expectedOutput: testCase.output,
           actualOutput: result.output,
           passed,
           error: undefined,
-        };
+        });
       } catch (error) {
-        return {
+        results.push({
           input: testCase.input,
           expectedOutput: testCase.output,
           actualOutput: '',
           passed: false,
           error: error instanceof Error ? error.message : 'Execution failed',
-        };
+        });
       }
-    });
-
-    const results = await Promise.all(executionPromises);
+    }
 
     return {
       success: true,
