@@ -53,6 +53,7 @@ export default function Header() {
     { name: 'Dashboard', href: '/', icon: 'dashboard' },
     { name: 'Problems', href: '/problems', icon: 'code' },
     { name: 'Practice', href: '/practice', icon: 'play' },
+    { name: 'Challenges', href: '/challenges', icon: 'trophy' },
     { name: 'Professor Exams', href: '/exams', icon: 'exam' },
     { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy' },
     { name: 'Community', href: '/community', icon: 'users' },
