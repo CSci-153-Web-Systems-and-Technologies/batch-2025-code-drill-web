@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
 import { User } from '@/types';
+import { StreakDisplay } from '@/components/streaks/StreakDisplay';
 
 export default function Header() {
   const pathname = usePathname();
@@ -51,6 +52,8 @@ export default function Header() {
   const navItems = [
     { name: 'Dashboard', href: '/', icon: 'dashboard' },
     { name: 'Problems', href: '/problems', icon: 'code' },
+    { name: 'Practice', href: '/practice', icon: 'play' },
+    { name: 'Challenges', href: '/challenges', icon: 'trophy' },
     { name: 'Professor Exams', href: '/exams', icon: 'exam' },
     { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy' },
     { name: 'Community', href: '/community', icon: 'users' },
@@ -137,6 +140,9 @@ export default function Header() {
 
           {/* Right Section - Points and Profile */}
           <div className="flex items-center space-x-4">
+            {/* Streak Display */}
+            {user && <StreakDisplay />}
+
             {/* Points Badge */}
             {user && (
               <div className="hidden sm:flex items-center bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-lg border border-yellow-200">

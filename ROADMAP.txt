@@ -30,17 +30,61 @@ IMMEDIATE NEXT STEPS (Phase 1)
    - Test complete authentication flow
    - Verify database triggers and RLS policies
 
-7. [ ] User Profile Page
-   - Display user information
-   - Edit profile functionality
-   - View user statistics history
-   - Activity timeline
+7. [✅] User Profile Page
+    ✅ COMPLETED (feature/user-profile branch)
+    
+    IMPLEMENTATION:
+    - Created /profile route with comprehensive profile display:
+      * ProfileHeader: Avatar (initials), name, email, cover gradient
+      * Quick stats: Total points, problems solved, current streak, avg score
+      * Edit profile button linking to /profile/edit
+    
+    - ProfileStats component with detailed analytics:
+      * Global rank badge using get_user_rank() RPC
+      * Percentile and total users display
+      * Total submissions, accepted, acceptance rate
+      * Points earned total
+      * Problems by difficulty (Easy/Medium/Hard) with progress bars
+      * Languages used badges
+    
+    - ProfileActivity component:
+      * Recent 10 submissions timeline
+      * Problem links, difficulty badges, status colors
+      * Points earned display per submission
+      * Time ago formatting (minutes/hours/days)
+      * Empty state with "Browse Problems" CTA
+    
+    - Integrated existing components:
+      * StreakCalendar: 30-day activity grid
+      * StreakStats: Current/longest streak display
+    
+    - Edit profile functionality (/profile/edit):
+      * EditProfileForm: Update name field
+      * Server action updateUserProfileAction()
+      * Success/error handling with redirects
+      * Email field (read-only, cannot be changed)
+    
+    - Server actions (app/profile/actions.ts):
+      * getUserRankAction(): Fetch rank, total users, percentile
+      * getUserDetailedStatsAction(): Calculate acceptance rate, problems by difficulty, languages
+      * getRecentActivityAction(): Fetch recent 10 submissions with problem data
+      * updateUserProfileAction(): Update user name
+    
+    LAYOUT:
+    - Responsive 3-column grid (2 left, 1 right)
+    - Left: ProfileStats, StreakCalendar, ProfileActivity
+    - Right: StreakStats
+    - Mobile-friendly stacking
+    
+    NOTE: Showcases all data from Steps 12-14 (Submissions, Points, Streaks)
 
 8. ✓ Problems Database Schema
    - Create problems table in Supabase
    - Add difficulty levels, categories, tags
    - Create sample problem data (10 problems ready in PROBLEMS_SETUP.md)
-   - Set up RLS policies
+    - Set up RLS policies
+    - C++ starter code updated with required headers and structs (vector, string, ListNode, TreeNode) in PROBLEMS_SETUP.md; helper script UPDATE_CPP_HEADERS.sql added
+    - Reminder: After running scoring/streak migrations in SCORING_SETUP.md, reload API cache with SELECT pg_notify('pgrst', 'reload schema');
 
 9. ✓ Problems Listing Page Enhancement
    - Connect to Supabase problems table
@@ -64,6 +108,9 @@ CORE FEATURES (Phase 2)
     - Support for multiple languages (JavaScript, Python, Java, C++)
     - Parallel test case execution
     - Error handling (compilation errors, runtime errors, timeouts)
+    - C++ execution wrappers with auto-generated main() via app/problems/[slug]/actions.ts (wrapCodeForExecution, wrapCppCode)
+    - Per-problem C++ wrappers implemented: two-sum, palindrome-number, reverse-string, valid-parentheses, maximum-subarray, longest-substring-without-repeating-characters, median-of-two-sorted-arrays, regular-expression-matching
+    - TODO: Add C++ wrappers for merge-two-sorted-lists and binary-tree-level-order-traversal (linked list/tree parsing + output formatting)
 
 12. ✓ Submission History
     - Store user submissions in database (schema ready)
@@ -80,25 +127,163 @@ CORE FEATURES (Phase 2)
     - Transaction-safe database functions
     - Points earned display in UI
 
-14. [ ] Streak Tracking
-    - Daily activity tracking
-    - Streak calculation logic
-    - Streak recovery grace period (1-day buffer)
-    - Visual streak calendar
+14. [✅] Streak Tracking
+    ✅ COMPLETED (feature/streak-tracking branch)
+    
+    IMPLEMENTATION:
+    - Created lib/streaks.ts with core streak logic:
+      * updateDailyStreak() - calls DB RPC after successful submission
+      * getUserStreak() - fetches current streak info with grace period calculation
+      * isStreakAtRisk() - detects if streak is 1 day from breaking
+      * getStreakCalendar() - generates 30-day activity calendar from submissions
+      * formatStreak(), getStreakEmoji() - display utilities with progressive emojis
+    
+    - Integrated into code submission flow (app/problems/[slug]/actions.ts):
+      * Call updateDailyStreak() after all tests pass
+      * Return streak info in submission response
+      * Graceful error handling if RPC not deployed
+    
+    - Created UI components:
+      * StreakDisplay (Header): Compact widget with emoji, day count, grace period warning
+      * StreakWarning (Dashboard): Yellow banner when streak at risk (last solve yesterday)
+      * StreakStats (Dashboard): Detailed card showing current/longest streaks
+      * StreakCalendar (Dashboard): 30-day visual activity grid (green=active, gray=inactive)
+    
+    - Integrated into pages:
+      * Header: StreakDisplay next to points badge (always visible)
+      * Dashboard: StreakWarning at top, StreakStats in right column, StreakCalendar in left
+    
+    DATABASE:
+    - Uses update_daily_streak() RPC from SCORING_SETUP.md
+    - Grace period logic (1-day buffer) enforced in database function
+    - Columns: current_streak, longest_streak, last_active_date, last_streak_update
+    
+    FEATURES:
+    - Automatic tracking on successful submissions
+    - 1-day grace period to prevent accidental loss
+    - Visual 30-day calendar heatmap
+    - Header widget shows current streak
+    - Warning banner when streak at risk
+    - Progressive emoji system (💤 → 🔥 → 🔥🔥 → 🔥🔥🔥 → 🏆)
+    
+    NOTE: Completes Steps 12-14 trilogy (Submission History, Points System, Streak Tracking)
 
 PRACTICE & CHALLENGES (Phase 3)
 --------------------------------
-15. [ ] Practice Session Feature
-    - Random problem selection based on difficulty
-    - Timed practice mode
-    - Focus on specific topics/categories
-    - Practice history
+15. [✅] Practice Session Feature
+    ✅ COMPLETED (feature/practice-sessions branch)
+    
+    IMPLEMENTATION:
+    - Database schema (supabase/migrations/20241202_practice_sessions.sql):
+      * practice_sessions table: user_id, difficulty, category, time_limit, 
+        started_at, completed_at, problems_attempted, problems_solved, 
+        total_score, status (active/completed/abandoned)
+      * session_problems table: junction for session-problem relationships
+        with status tracking (pending/attempted/solved)
+      * RLS policies for secure user data access
+      * Auto-updated timestamps with triggers
+    
+    - Types (types/practice.ts):
+      * PracticeSession, SessionProblem, PracticeSessionConfig interfaces
+      * ActiveSessionData for session with problems
+    
+    - Server actions (app/practice/actions.ts):
+      * createPracticeSession(): Start new session with config
+      * getActiveSession(): Check for ongoing session
+      * getSessionDetails(): Fetch session with problems
+      * updateSessionStatus(): Mark session complete/abandoned
+      * updateSessionProblemStatus(): Track problem attempts/solves
+      * getPracticeHistory(): Fetch past 20 sessions
+    
+    - Pages:
+      * /practice: Session configuration with difficulty selector,
+        time limit options (15/30/45/60/90 mins), info cards, resume button
+      * /practice/[sessionId]: Active session with countdown timer,
+        stats (solved/attempted/total), problem list with status badges,
+        complete/abandon buttons, time warning at 5 mins
+      * /practice/history: Past sessions list with stats, summary cards,
+        accuracy calculations, duration display
+    
+    - Navigation:
+      * Added "Practice" link to Header between Problems and Professor Exams
+    
+    FEATURES:
+    - Random problem selection (up to 10) based on difficulty/category filters
+    - Countdown timer with visual warnings (red < 5 mins)
+    - Real-time session stats tracking
+    - Problem status badges (pending/attempted/solved)
+    - Practice history with accuracy and duration metrics
+    - Resume active session capability
+    - Risk-free practice (doesn't affect rating/streaks)
+    - Auto-complete session when timer expires
+    
+    NOTE: Practice sessions provide risk-free environment for skill building
 
-16. [ ] Weekly Challenges
-    - Create challenges table
-    - Challenge submission tracking
-    - Participant count and rankings
-    - Challenge completion badges
+16. [✅] Weekly Challenges
+    ✅ COMPLETED (feature/weekly-challenges branch)
+    
+    IMPLEMENTATION:
+    - Database schema (supabase/migrations/20241202_challenges.sql):
+      * challenges table: title, description, difficulty, problem_id, 
+        start/end dates, max_points, status (upcoming/active/completed)
+      * challenge_participants table: tracks user enrollments, completion status,
+        scores, and leaderboard rankings
+      * challenge_submissions table: links submissions to challenges, tracks points,
+        identifies best submissions
+      * RLS policies for public read, authenticated write
+      * Indexes for performance optimization
+    
+    - Database RPCs:
+      * update_challenge_status(): Auto-transitions challenges based on dates
+      * update_challenge_ranks(): Calculates leaderboard positions
+      * record_challenge_submission(): Records submission, updates scores, 
+        recalculates ranks, handles first completion detection
+    
+    - Types (types/challenge.ts):
+      * Challenge, ChallengeParticipant, ChallengeSubmission interfaces
+      * ChallengeWithProblem, ChallengeWithStats extended types
+      * ChallengeLeaderboardEntry for rankings display
+    
+    - Server actions (app/challenges/actions.ts):
+      * getChallenges(): Fetch with filtering by status (active/upcoming/completed)
+      * getChallengeById(): Single challenge with stats and user participation
+      * joinChallenge(): Enroll user in challenge
+      * getChallengeLeaderboard(): Top 100 ranked participants
+      * getActiveChallenges(): For dashboard widget (top 3)
+      * updateChallengeStatuses(): Manual status refresh trigger
+    
+    - Pages:
+      * /challenges: Browse challenges with tabs (Active/Upcoming/Completed/All),
+        participant counts, time remaining display, completion badges
+      * /challenges/[id]: Challenge detail with description, problem link,
+        leaderboard (top 100 with medals for top 3), join button,
+        progress tracking, tips sidebar
+    
+    - Components:
+      * ActiveChallenges (Dashboard): Shows top 3 active challenges,
+        time remaining, participant counts, completion status,
+        join buttons, "View All" link
+    
+    - Navigation:
+      * Added "Challenges" link to Header between Practice and Professor Exams
+    
+    - Dashboard Integration:
+      * Replaced static Challenges component with ActiveChallenges widget
+      * Real-time data from database
+      * Shows user participation and completion status
+    
+    FEATURES:
+    - Time-limited weekly challenges (customizable duration)
+    - Live leaderboard with rankings (top 3 get medals 🥇🥈🥉)
+    - Participant tracking and completion badges
+    - Points-based scoring system
+    - Multiple submissions allowed (best score counts)
+    - Auto-status transitions based on dates
+    - Filterable challenge list (active/upcoming/completed)
+    - User progress tracking (joined/completed status)
+    - Challenge info cards with participant stats
+    
+    NOTE: Foundation for competitive features and community engagement
 
 17. [ ] Skills Progress Tracking
     - Track problems solved by category

@@ -4,7 +4,10 @@ import Container from '@/components/shared/Container';
 import WeeklyGoal from '@/components/shared/WeeklyGoal';
 import SkillProgress from '@/components/shared/SkillProgress';
 import RankCard from '@/components/shared/RankCard';
-import Challenges from '@/components/shared/Challenges';
+import { StreakWarning } from '@/components/streaks/StreakWarning';
+import { StreakStats } from '@/components/streaks/StreakStats';
+import { StreakCalendar } from '@/components/streaks/StreakCalendar';
+import ActiveChallenges from '@/components/challenges/ActiveChallenges';
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
@@ -21,24 +24,7 @@ export default async function Home() {
     { name: 'Dynamic Programming', current: 6, total: 20 },
   ];
 
-  const challenges = [
-    {
-      id: '1',
-      title: 'Weekly Algorithms Challenge',
-      description: 'Dynamic Programming Focus',
-      participants: 234,
-      points: 100,
-      daysLeft: 2,
-    },
-    {
-      id: '2',
-      title: 'Data Structures Sprint',
-      description: 'Trees and Graphs',
-      participants: 156,
-      points: 75,
-      daysLeft: 5,
-    },
-  ];
+
 
   return (
     <Container className="py-8">
@@ -61,6 +47,9 @@ export default async function Home() {
           Start Practice Session
         </Button>
       </div>
+
+      {/* Streak Warning */}
+      <StreakWarning />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
@@ -112,12 +101,14 @@ export default async function Home() {
         <div className="lg:col-span-2 space-y-6">
           <WeeklyGoal current={7} goal={10} />
           <SkillProgress skills={skills} />
+          <StreakCalendar />
         </div>
 
         {/* Right Column - Rank & Challenges */}
         <div className="space-y-6">
           <RankCard rank={12} />
-          <Challenges challenges={challenges} />
+          <StreakStats />
+          <ActiveChallenges />
         </div>
       </div>
     </Container>

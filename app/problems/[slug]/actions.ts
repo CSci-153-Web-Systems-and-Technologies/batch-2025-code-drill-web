@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { calculatePoints, type Difficulty } from '@/lib/scoring';
+import { updateDailyStreak } from '@/lib/streaks';
 
 interface TestCase {
   input: string;
@@ -261,9 +262,23 @@ async function executeWithJudge0(
   // Wrap code with necessary boilerplate (especially for C++)
   const executableCode = wrapCodeForExecution(language, code, problemSlug);
 
+  // Helper: fetch with exponential backoff on 429
+  async function fetchWithBackoff(url: string, options: RequestInit, maxRetries = 3) {
+    let attempt = 0;
+    let delayMs = 1000;
+    while (true) {
+      const res = await fetch(url, options);
+      if (res.status !== 429) return res;
+      if (attempt >= maxRetries) return res;
+      await new Promise((r) => setTimeout(r, delayMs));
+      attempt++;
+      delayMs = Math.min(delayMs * 2, 8000);
+    }
+  }
+
   try {
     // Submit code for execution
-    const submitResponse = await fetch(
+    const submitResponse = await fetchWithBackoff(
       `${JUDGE0_API_URL}/submissions?base64_encoded=true&wait=false`,
       {
         method: 'POST',
@@ -281,6 +296,9 @@ async function executeWithJudge0(
     );
 
     if (!submitResponse.ok) {
+      if (submitResponse.status === 429) {
+        return { output: '', error: 'Service busy — please retry in a few seconds.', status: 'Too Many Requests' };
+      }
       throw new Error(`Judge0 submission failed: ${submitResponse.statusText}`);
     }
 
@@ -293,7 +311,7 @@ async function executeWithJudge0(
     while (attempts < maxAttempts) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const resultResponse = await fetch(
+      const resultResponse = await fetchWithBackoff(
         `${JUDGE0_API_URL}/submissions/${token}?base64_encoded=true`,
         {
           headers: {
@@ -304,6 +322,9 @@ async function executeWithJudge0(
       );
 
       if (!resultResponse.ok) {
+        if (resultResponse.status === 429) {
+          return { output: '', error: 'Service busy — please retry in a few seconds.', status: 'Too Many Requests' };
+        }
         throw new Error(`Judge0 result fetch failed: ${resultResponse.statusText}`);
       }
 
@@ -360,44 +381,44 @@ export async function runCode({ problemId, language, code, testCases }: RunCodeP
     
     const problemSlug = problem?.slug || '';
     
-    // Execute all test cases in parallel
-    const executionPromises = testCases.map(async (testCase) => {
+    // Execute test cases sequentially to avoid Judge0 rate-limit bursts
+    const results: Array<{ input: string; expectedOutput: string; actualOutput: string; passed: boolean; error?: string; }> = [];
+    for (const testCase of testCases) {
       try {
         const result = await executeWithJudge0(language, code, testCase.input, problemSlug);
         
         if (result.error) {
-          return {
+          results.push({
             input: testCase.input,
             expectedOutput: testCase.output,
             actualOutput: result.output || '',
             passed: false,
             error: result.error,
-          };
+          });
+          continue;
         }
 
         const expectedOutput = testCase.output.trim();
         const actualOutput = result.output.trim();
         const passed = expectedOutput === actualOutput;
 
-        return {
+        results.push({
           input: testCase.input,
           expectedOutput: testCase.output,
           actualOutput: result.output,
           passed,
           error: undefined,
-        };
+        });
       } catch (error) {
-        return {
+        results.push({
           input: testCase.input,
           expectedOutput: testCase.output,
           actualOutput: '',
           passed: false,
           error: error instanceof Error ? error.message : 'Execution failed',
-        };
+        });
       }
-    });
-
-    const results = await Promise.all(executionPromises);
+    }
 
     return {
       success: true,
@@ -518,8 +539,8 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       pointsEarned = pointsBreakdown.totalPoints;
     }
 
-    // Save submission to database
-    const { error: insertError } = await supabase.from('submissions').insert({
+    // Save submission to database with backward-compatible fallbacks
+    const basePayload: any = {
       user_id: user.id,
       problem_id: problemId,
       language,
@@ -527,12 +548,40 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       status,
       test_cases_passed: results.filter((r) => r.passed).length,
       total_test_cases: results.length,
-      points_earned: pointsEarned,
-      solve_time_seconds: solveTimeSeconds,
-    });
+    };
 
-    if (insertError) {
-      console.error('Error saving submission:', insertError);
+    // Try with extended fields first (new schema)
+    let insertError: any | null = null;
+    {
+      const extendedPayload = {
+        ...basePayload,
+        points_earned: pointsEarned,
+        solve_time_seconds: solveTimeSeconds,
+      };
+      const res = await supabase.from('submissions').insert(extendedPayload);
+      insertError = res.error;
+    }
+
+    // If the new columns do not exist yet, retry without them
+    if (insertError && insertError.code === 'PGRST204') {
+      // Retry without new columns (schema not yet migrated)
+      const fallbackRes = await supabase.from('submissions').insert(basePayload);
+      if (fallbackRes.error) {
+        console.error('Error saving submission (fallback):', fallbackRes.error);
+      }
+    } else if (insertError) {
+      // If another constraint fails, try a minimal payload one last time
+      const minimalPayload = {
+        user_id: user.id,
+        problem_id: problemId,
+        language,
+        code,
+        status,
+      };
+      const minimalRes = await supabase.from('submissions').insert(minimalPayload);
+      if (minimalRes.error) {
+        console.error('Error saving submission (minimal):', minimalRes.error);
+      }
     }
 
     // Update user stats if submission passed
@@ -550,18 +599,56 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
         }
       );
 
+      // If the RPC isn't deployed yet, skip without failing the request
       if (updateError) {
-        console.error('Error updating user stats:', updateError);
+        if (updateError.code === 'PGRST202') {
+          console.warn('update_user_stats RPC not found (skipping):', updateError.message);
+        } else {
+          console.error('Error updating user stats:', updateError);
+        }
       }
-    }
 
-    return {
-      success: true,
-      results,
-      status,
-      pointsEarned,
-      pointsBreakdown,
-    };
+      // Update daily streak after successful submission
+      const streakResult = await updateDailyStreak(user.id);
+      
+      if (streakResult.success) {
+        console.log('Streak updated:', {
+          currentStreak: streakResult.currentStreak,
+          longestStreak: streakResult.longestStreak,
+          gracePeriodUsed: streakResult.gracePeriodUsed,
+        });
+      }
+
+      return {
+        success: true,
+        results,
+        status,
+        pointsEarned,
+        pointsBreakdown,
+        streakInfo: streakResult.success ? {
+          currentStreak: streakResult.currentStreak,
+          longestStreak: streakResult.longestStreak,
+          gracePeriodUsed: streakResult.gracePeriodUsed,
+        } : undefined,
+      };
+    } else {
+      // If not accepted, still record an attempt for analytics if RPC exists
+      const { error: attemptErr } = await supabase.rpc('increment_problem_attempts', {
+        p_user_id: user.id,
+        p_problem_id: problemId,
+      });
+      if (attemptErr && attemptErr.code !== 'PGRST202') {
+        console.warn('increment_problem_attempts RPC error:', attemptErr.message);
+      }
+
+      return {
+        success: true,
+        results,
+        status,
+        pointsEarned,
+        pointsBreakdown,
+      };
+    }
   } catch (error) {
     console.error('Error submitting code:', error);
     return {

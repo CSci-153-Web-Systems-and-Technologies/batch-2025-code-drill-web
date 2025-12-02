@@ -449,6 +449,154 @@ Display user's code submission history with filtering, code viewing, and perform
 
 ---
 
+## 8. Daily Streak Tracking
+
+Track user engagement with a daily streak system that rewards consistent problem-solving. Users earn a streak by solving at least one problem per day, with a 1-day grace period to prevent streak loss.
+
+### Core Logic (`lib/streaks.ts`)
+
+**Main Functions:**
+- `updateDailyStreak(userId, activityDate?)`: Calls database RPC to update streak
+  - Parameters: User ID, optional activity date (defaults to today)
+  - Returns: `StreakUpdateResult` with current/longest streak, grace period status
+  - Graceful error handling if RPC not deployed
+  
+- `getUserStreak(userId)`: Fetches current streak information
+  - Returns: `StreakInfo` with current/longest streaks, last active date, grace period status
+  - Calculates days since last activity
+  - Determines if grace period is active
+  
+- `isStreakAtRisk(streakInfo)`: Checks if streak is about to break
+  - Returns: `boolean` - true if last activity was yesterday (1 day gap)
+  - Used to trigger warning banners
+  
+- `getStreakCalendar(userId)`: Generates 30-day activity calendar
+  - Fetches accepted submissions from last 30 days
+  - Returns: Array of `{ date: string, active: boolean }`
+  - Used for visual streak calendar display
+
+**Utility Functions:**
+- `formatStreak(days)`: Format for display ("1 day", "5 days", "No streak")
+- `getStreakEmoji(days)`: Progressive emojis based on streak length
+  - 0 days: 💤
+  - 1-6 days: 🔥
+  - 7-29 days: 🔥🔥
+  - 30-99 days: 🔥🔥🔥
+  - 100+ days: 🏆
+
+### Components
+
+- **`components/streaks/StreakDisplay.tsx`** (Header widget)
+  - Compact display with emoji and day count
+  - Shows grace period warning (⚠️) when active
+  - Tooltip with current and longest streak
+  - Orange gradient background
+  - Hover state transitions
+  
+- **`components/streaks/StreakWarning.tsx`** (Dashboard banner)
+  - Yellow warning banner when streak at risk
+  - Displays current streak and urgency message
+  - Dismissible by user
+  - Only shown when:
+    - Streak is at risk (1 day from breaking)
+    - Current streak > 0
+  
+- **`components/streaks/StreakStats.tsx`** (Dashboard card)
+  - Detailed streak statistics card
+  - Current streak with gradient background (orange-red)
+  - Longest streak with gradient background (purple-blue)
+  - Last active date display (Today, Yesterday, X days ago)
+  - Grace period indicators
+  - At-risk warnings
+  - Educational tooltip about grace period
+  
+- **`components/streaks/StreakCalendar.tsx`** (Dashboard calendar)
+  - 30-day visual activity grid
+  - Color-coded days:
+    - Green: Active (solved at least one problem)
+    - Gray: Inactive
+    - Blue ring: Today
+  - Day-of-month labels
+  - Hover tooltips with date and activity status
+  - Legend explaining colors
+  - Responsive grid layout (7 columns for week days)
+
+### Integration
+
+**Submission Flow (`app/problems/[slug]/actions.ts`):**
+- After successful submission (all tests passed):
+  1. Call `updateDailyStreak(user.id)`
+  2. Log streak update result
+  3. Return streak info in submission response
+- Streak info includes:
+  - `currentStreak`: Number of consecutive days
+  - `longestStreak`: Personal best
+  - `gracePeriodUsed`: Whether grace day was consumed
+
+**Dashboard (`app/page.tsx`):**
+- `StreakWarning`: Top of page (shown when at risk)
+- `StreakStats`: Right column (alongside rank and challenges)
+- `StreakCalendar`: Left column (below skill progress)
+
+**Header (`components/layout/Header.tsx`):**
+- `StreakDisplay`: Next to points badge
+- Always visible to authenticated users
+- Shows current streak with emoji
+- Grace period warning icon when applicable
+
+### Database Schema
+
+**Users Table Columns:**
+```sql
+current_streak INTEGER DEFAULT 0
+longest_streak INTEGER DEFAULT 0
+last_active_date DATE
+last_streak_update DATE
+```
+
+**Database Function:**
+```sql
+CREATE OR REPLACE FUNCTION update_daily_streak(
+  p_user_id UUID,
+  p_activity_date DATE DEFAULT CURRENT_DATE
+) RETURNS JSON
+```
+
+**Grace Period Logic:**
+- If last activity was yesterday (1 day gap): Maintain streak
+- If last activity was 2 days ago (2 day gap): Use grace period, maintain streak
+- If last activity was 3+ days ago: Reset streak to 1
+- Grace period can only be used once per streak sequence
+
+### Features Implemented
+- ✅ **Automatic Tracking:** Streak updates on successful submissions
+- ✅ **Grace Period:** 1-day buffer to prevent loss (database enforced)
+- ✅ **Visual Calendar:** 30-day activity heatmap
+- ✅ **Header Widget:** Persistent streak display
+- ✅ **Warning Banner:** Alerts when streak at risk
+- ✅ **Stats Card:** Detailed current/longest streak info
+- ✅ **Emoji Progression:** Visual feedback for milestones
+- ✅ **Graceful Degradation:** Works without database functions deployed
+
+### User Experience Flow
+```
+1. User solves problem → submitCode() called
+2. All tests pass → updateDailyStreak() called
+3. Database updates streak with grace period logic
+4. User sees updated streak in header immediately
+5. Dashboard shows streak calendar and stats
+6. If streak at risk (yesterday's last solve), warning banner appears
+7. User solves problem today → streak continues, banner disappears
+```
+
+### Streak States
+- **Active:** Solved problem today or yesterday
+- **At Risk:** Last solve was yesterday (1 day gap)
+- **Grace Period Used:** Last solve was 2 days ago (2 day gap)
+- **Broken:** Last solve was 3+ days ago
+
+---
+
 ## Configuration Files
 
 ### `.env.local`
