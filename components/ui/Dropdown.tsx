@@ -6,9 +6,10 @@ interface DropdownProps {
   label: string;
   options: string[];
   onSelect?: (option: string) => void;
+  onChange?: (option: string) => void;
 }
 
-export default function Dropdown({ label, options, onSelect }: DropdownProps) {
+export default function Dropdown({ label, options, onSelect, onChange }: DropdownProps) {
   const [selected, setSelected] = useState(label);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -16,6 +17,7 @@ export default function Dropdown({ label, options, onSelect }: DropdownProps) {
     setSelected(option);
     setIsOpen(false);
     onSelect?.(option);
+    onChange?.(option);
   };
 
   return (

@@ -1,15 +1,56 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect } from 'react';
+import { User } from '@/types';
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (authUser) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
+        
+        if (userData) {
+          setUser({
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            totalPoints: userData.total_points,
+            problemsSolved: userData.problems_solved,
+            currentStreak: userData.current_streak,
+            avgScore: userData.avg_score,
+          });
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchUser();
+  }, [supabase]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   const navItems = [
     { name: 'Dashboard', href: '/', icon: 'dashboard' },
     { name: 'Problems', href: '/problems', icon: 'code' },
-    { name: 'Practice', href: '/practice', icon: 'play' },
     { name: 'Professor Exams', href: '/exams', icon: 'exam' },
     { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy' },
     { name: 'Community', href: '/community', icon: 'users' },
@@ -97,23 +138,39 @@ export default function Header() {
           {/* Right Section - Points and Profile */}
           <div className="flex items-center space-x-4">
             {/* Points Badge */}
-            <div className="hidden sm:flex items-center bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-lg border border-yellow-200">
-              <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-              <span className="text-sm font-semibold">1250 pts</span>
-            </div>
+            {user && (
+              <div className="hidden sm:flex items-center bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-lg border border-yellow-200">
+                <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                </svg>
+                <span className="text-sm font-semibold">{user.totalPoints} pts</span>
+              </div>
+            )}
 
-            {/* Profile */}
-            <Link
-              href="/profile"
-              className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span className="hidden sm:inline text-sm font-medium">Profile</span>
-            </Link>
+            {/* User Menu */}
+            {user && user.name && (
+              <div className="flex items-center space-x-3">
+                <Link
+                  href="/profile"
+                  className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center font-semibold text-sm">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline text-sm font-medium">{user.name}</span>
+                </Link>
+                
+                <button
+                  onClick={handleSignOut}
+                  className="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100"
+                  title="Sign out"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
+            )}
 
             {/* Mobile Menu Button */}
             <button className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100">

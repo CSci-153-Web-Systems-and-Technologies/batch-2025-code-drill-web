@@ -5,8 +5,15 @@ import WeeklyGoal from '@/components/shared/WeeklyGoal';
 import SkillProgress from '@/components/shared/SkillProgress';
 import RankCard from '@/components/shared/RankCard';
 import Challenges from '@/components/shared/Challenges';
+import { getCurrentUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect('/login');
+  }
   const skills = [
     { name: 'Arrays & Strings', current: 17, total: 20 },
     { name: 'Linked Lists', current: 10, total: 15 },
@@ -39,10 +46,12 @@ export default function Home() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, Alex!
+            Welcome back, {user.name}!
           </h1>
           <p className="text-gray-600">
-            Ready to continue your coding journey?
+            {user.problemsSolved === 0 
+              ? "Start your coding journey today!" 
+              : "Ready to continue your coding journey?"}
           </p>
         </div>
         <Button size="lg">
@@ -61,7 +70,7 @@ export default function Home() {
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
             </svg>
           }
-          value="1250"
+          value={user.totalPoints.toString()}
           label="Total Points"
           color="bg-yellow-50"
         />
@@ -71,7 +80,7 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           }
-          value="47"
+          value={user.problemsSolved.toString()}
           label="Problems Solved"
           color="bg-green-50"
         />
@@ -81,7 +90,7 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
             </svg>
           }
-          value="5 days"
+          value={user.currentStreak === 0 ? "0 days" : `${user.currentStreak} days`}
           label="Current Streak"
           color="bg-orange-50"
         />
@@ -91,7 +100,7 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
           }
-          value="85%"
+          value={`${user.avgScore}%`}
           label="Avg Score"
           color="bg-purple-50"
         />
