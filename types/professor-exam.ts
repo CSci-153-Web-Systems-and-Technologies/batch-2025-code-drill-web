@@ -230,3 +230,85 @@ export interface CourseStats {
   avg_accuracy: number;
   total_time_spent_minutes: number;
 }
+
+// ============================================================================
+// VERSIONING INTERFACES
+// ============================================================================
+
+export interface QuestionVersion {
+  id: string;
+  question_id: string;
+  version_number: number;
+  question_data: Record<string, any>; // JSONB snapshot of question fields
+  changed_by: string; // User ID
+  changed_at: string;
+  change_description: string | null;
+  created_at: string;
+}
+
+export interface QuestionVersionWithUser extends QuestionVersion {
+  user_name: string | null;
+  user_email: string | null;
+}
+
+export interface VersionComparison {
+  field: string;
+  old_value: any;
+  new_value: any;
+  changed: boolean;
+}
+
+export interface QuestionWithVersions extends ExamQuestion {
+  versions: QuestionVersion[];
+  current_version: number;
+  total_versions: number;
+}
+
+// ============================================================================
+// PREVIEW TOKEN INTERFACES
+// ============================================================================
+
+export interface PreviewToken {
+  id: string;
+  token: string;
+  question_id: string;
+  created_by: string;
+  created_at: string;
+  expires_at: string;
+  allowed_views: number;
+  view_count: number;
+  is_active: boolean;
+  notes: string | null;
+}
+
+export interface PreviewTokenWithQuestion extends PreviewToken {
+  question: ExamQuestion;
+  creator_name: string | null;
+  creator_email: string | null;
+}
+
+export interface TokenValidationResult {
+  valid: boolean;
+  error?: string;
+  question_id?: string;
+  views_remaining?: number;
+}
+
+// ============================================================================
+// PUBLISH STATUS INTERFACES
+// ============================================================================
+
+export interface QuestionWithPublishStatus extends ExamQuestion {
+  is_published: boolean;
+  published_at: string | null;
+  published_by: string | null;
+  publisher_name?: string | null;
+}
+
+export interface PublishResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  published_count?: number;
+  unpublished_count?: number;
+}
