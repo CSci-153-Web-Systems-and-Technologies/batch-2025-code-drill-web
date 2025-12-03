@@ -249,8 +249,10 @@ async function executeWithJudge0(
 ): Promise<{ output: string; error?: string; status?: string }> {
   const JUDGE0_API_URL = process.env.JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.com';
   const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
+  const isRapidAPI = JUDGE0_API_URL.includes('rapidapi.com');
 
-  if (!JUDGE0_API_KEY) {
+  // Only require API key for RapidAPI
+  if (isRapidAPI && !JUDGE0_API_KEY) {
     throw new Error('Judge0 API key not configured');
   }
 
@@ -277,16 +279,22 @@ async function executeWithJudge0(
   }
 
   try {
+    // Build headers based on API type
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (isRapidAPI && JUDGE0_API_KEY) {
+      headers['X-RapidAPI-Key'] = JUDGE0_API_KEY;
+      headers['X-RapidAPI-Host'] = 'judge0-ce.p.rapidapi.com';
+    }
+
     // Submit code for execution
     const submitResponse = await fetchWithBackoff(
       `${JUDGE0_API_URL}/submissions?base64_encoded=true&wait=false`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-RapidAPI-Key': JUDGE0_API_KEY,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-        },
+        headers,
         body: JSON.stringify({
           source_code: Buffer.from(executableCode).toString('base64'),
           language_id: languageId,
@@ -314,10 +322,7 @@ async function executeWithJudge0(
       const resultResponse = await fetchWithBackoff(
         `${JUDGE0_API_URL}/submissions/${token}?base64_encoded=true`,
         {
-          headers: {
-            'X-RapidAPI-Key': JUDGE0_API_KEY,
-            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-          },
+          headers,
         }
       );
 

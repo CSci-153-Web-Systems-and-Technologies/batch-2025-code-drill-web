@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  judge0-server:
+    image: judge0/judge0:1.13.0
+    container_name: judge0-server
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    ports:
+      - "2358:2358"
+    privileged: true
+    environment:
+      - REDIS_HOST=judge0-redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=judge0-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0_secure_password_change_me
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - judge0-network
+
+  judge0-workers:
+    image: judge0/judge0:1.13.0
+    container_name: judge0-workers
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    environment:
+      - REDIS_HOST=judge0-redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=judge0-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0_secure_password_change_me
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - judge0-network
+
+  judge0-db:
+    image: postgres:13-alpine
+    container_name: judge0-db
+    environment:
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0_secure_password_change_me
+    volumes:
+      - judge0-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - judge0-network
+
+  judge0-redis:
+    image: redis:7-alpine
+    container_name: judge0-redis
+    command: redis-server --appendonly yes --requirepass judge0_redis_password_change_me
+    volumes:
+      - judge0-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "judge0_redis_password_change_me", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - judge0-network
+
+volumes:
+  judge0-postgres-data:
+    driver: local
+  judge0-redis-data:
+    driver: local
+
+networks:
+  judge0-network:
+    driver: bridge
