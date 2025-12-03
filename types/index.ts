@@ -1,5 +1,7 @@
 // Common types for the application
 
+export type UserRole = 'student' | 'professor' | 'admin';
+
 export interface User {
   id: string;
   name: string;
@@ -8,6 +10,7 @@ export interface User {
   problemsSolved: number;
   currentStreak: number;
   avgScore: number;
+  role: UserRole;
 }
 
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
