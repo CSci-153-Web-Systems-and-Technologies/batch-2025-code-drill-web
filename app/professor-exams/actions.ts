@@ -556,3 +556,402 @@ export async function trackHintUsage(questionId: string, progressId: string): Pr
     if (error) throw error;
   }
 }
+
+// ============================================================================
+// VERSIONING ACTIONS
+// ============================================================================
+
+/**
+ * Get version history for a question
+ */
+export async function getQuestionVersionHistory(questionId: string) {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .from('exam_question_versions')
+    .select(`
+      *,
+      users!exam_question_versions_changed_by_fkey (
+        name,
+        email
+      )
+    `)
+    .eq('question_id', questionId)
+    .order('version_number', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching version history:', error);
+    return [];
+  }
+
+  return data.map(version => ({
+    id: version.id,
+    question_id: version.question_id,
+    version_number: version.version_number,
+    question_data: version.question_data,
+    changed_by: version.changed_by,
+    changed_at: version.changed_at,
+    change_description: version.change_description,
+    created_at: version.created_at,
+    user_name: version.users?.name || null,
+    user_email: version.users?.email || null,
+  }));
+}
+
+/**
+ * Rollback question to a specific version
+ */
+export async function rollbackQuestionToVersion(
+  questionId: string,
+  versionNumber: number
+) {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .rpc('rollback_question_to_version', {
+      p_question_id: questionId,
+      p_version_number: versionNumber,
+    });
+
+  if (error) {
+    console.error('Error rolling back question:', error);
+    return { success: false, error: error.message };
+  }
+
+  return data;
+}
+
+/**
+ * Compare two versions of a question
+ */
+export async function compareQuestionVersions(
+  questionId: string,
+  version1: number,
+  version2: number
+) {
+  const supabase = await createClient();
+  
+  const { data: versions, error } = await supabase
+    .from('exam_question_versions')
+    .select('*')
+    .eq('question_id', questionId)
+    .in('version_number', [version1, version2]);
+
+  if (error || !versions || versions.length !== 2) {
+    return { success: false, error: 'Failed to fetch versions for comparison' };
+  }
+
+  const v1 = versions.find(v => v.version_number === version1);
+  const v2 = versions.find(v => v.version_number === version2);
+
+  if (!v1 || !v2) {
+    return { success: false, error: 'Version not found' };
+  }
+
+  // Compare all fields
+  const fields = [
+    'title',
+    'question_text',
+    'code_snippet',
+    'blanks',
+    'expected_output',
+    'output_tips',
+    'essay_context',
+    'essay_requirements',
+    'essay_structure_guide',
+    'points',
+    'difficulty',
+    'hints',
+  ];
+
+  const differences = fields.map(field => ({
+    field,
+    old_value: v1.question_data[field],
+    new_value: v2.question_data[field],
+    changed: JSON.stringify(v1.question_data[field]) !== JSON.stringify(v2.question_data[field]),
+  })).filter(diff => diff.changed);
+
+  return {
+    success: true,
+    version1: { ...v1.question_data, version_number: v1.version_number },
+    version2: { ...v2.question_data, version_number: v2.version_number },
+    differences,
+  };
+}
+
+// ============================================================================
+// PUBLISH/UNPUBLISH ACTIONS
+// ============================================================================
+
+/**
+ * Publish a question
+ */
+export async function publishQuestion(questionId: string) {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .rpc('publish_question', {
+      p_question_id: questionId,
+    });
+
+  if (error) {
+    console.error('Error publishing question:', error);
+    return { success: false, error: error.message };
+  }
+
+  return data;
+}
+
+/**
+ * Unpublish a question
+ */
+export async function unpublishQuestion(questionId: string) {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .rpc('unpublish_question', {
+      p_question_id: questionId,
+    });
+
+  if (error) {
+    console.error('Error unpublishing question:', error);
+    return { success: false, error: error.message };
+  }
+
+  return data;
+}
+
+/**
+ * Bulk publish questions
+ */
+export async function bulkPublishQuestions(questionIds: string[]) {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .rpc('bulk_publish_questions', {
+      p_question_ids: questionIds,
+    });
+
+  if (error) {
+    console.error('Error bulk publishing questions:', error);
+    return { success: false, error: error.message };
+  }
+
+  return data;
+}
+
+/**
+ * Bulk unpublish questions
+ */
+export async function bulkUnpublishQuestions(questionIds: string[]) {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .rpc('bulk_unpublish_questions', {
+      p_question_ids: questionIds,
+    });
+
+  if (error) {
+    console.error('Error bulk unpublishing questions:', error);
+    return { success: false, error: error.message };
+  }
+
+  return data;
+}
+
+/**
+ * Get questions with publish status for professor dashboard
+ */
+export async function getQuestionsWithPublishStatus(
+  templateId?: string,
+  publishedOnly?: boolean
+) {
+  const supabase = await createClient();
+  
+  let query = supabase
+    .from('exam_questions')
+    .select(`
+      *,
+      exam_templates (
+        title,
+        exam_type,
+        course_id
+      ),
+      users!exam_questions_published_by_fkey (
+        name,
+        email
+      )
+    `)
+    .order('question_number');
+
+  if (templateId) {
+    query = query.eq('template_id', templateId);
+  }
+
+  if (publishedOnly) {
+    query = query.eq('is_published', true);
+  }
+
+  const { data, error } = await supabase;
+
+  if (error) {
+    console.error('Error fetching questions with publish status:', error);
+    return [];
+  }
+
+  return data;
+}
+
+// ============================================================================
+// PREVIEW TOKEN ACTIONS
+// ============================================================================
+
+/**
+ * Generate a preview token for a question
+ */
+export async function generatePreviewToken(
+  questionId: string,
+  expiresInDays: number = 7,
+  allowedViews: number = 10,
+  notes?: string
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+  const { data, error } = await supabase
+    .from('preview_tokens')
+    .insert({
+      question_id: questionId,
+      created_by: user.id,
+      expires_at: expiresAt.toISOString(),
+      allowed_views: allowedViews,
+      notes,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating preview token:', error);
+    return { success: false, error: error.message };
+  }
+
+  return {
+    success: true,
+    token: data.token,
+    expires_at: data.expires_at,
+    allowed_views: data.allowed_views,
+  };
+}
+
+/**
+ * Validate a preview token
+ */
+export async function validatePreviewToken(token: string) {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .rpc('validate_preview_token', {
+      p_token: token,
+    });
+
+  if (error) {
+    console.error('Error validating preview token:', error);
+    return { valid: false, error: error.message };
+  }
+
+  return data;
+}
+
+/**
+ * Get preview tokens created by the current user
+ */
+export async function getUserPreviewTokens(questionId?: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  let query = supabase
+    .from('preview_tokens')
+    .select(`
+      *,
+      exam_questions (
+        id,
+        title,
+        question_type
+      )
+    `)
+    .eq('created_by', user.id)
+    .order('created_at', { ascending: false });
+
+  if (questionId) {
+    query = query.eq('question_id', questionId);
+  }
+
+  const { data, error } = await supabase;
+
+  if (error) {
+    console.error('Error fetching preview tokens:', error);
+    return [];
+  }
+
+  return data;
+}
+
+/**
+ * Deactivate a preview token
+ */
+export async function deactivatePreviewToken(tokenId: string) {
+  const supabase = await createClient();
+  
+  const { error } = await supabase
+    .from('preview_tokens')
+    .update({ is_active: false })
+    .eq('id', tokenId);
+
+  if (error) {
+    console.error('Error deactivating preview token:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Get question by preview token (for public preview page)
+ */
+export async function getQuestionByPreviewToken(token: string) {
+  // First validate the token
+  const validation = await validatePreviewToken(token);
+  
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('exam_questions')
+    .select('*')
+    .eq('id', validation.question_id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching question:', error);
+    return { success: false, error: error.message };
+  }
+
+  return {
+    success: true,
+    question: data,
+    views_remaining: validation.views_remaining,
+  };
+}
