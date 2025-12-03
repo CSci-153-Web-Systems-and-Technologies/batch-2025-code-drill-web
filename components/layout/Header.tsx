@@ -54,7 +54,7 @@ export default function Header() {
     { name: 'Problems', href: '/problems', icon: 'code' },
     { name: 'Practice', href: '/practice', icon: 'play' },
     { name: 'Challenges', href: '/challenges', icon: 'trophy' },
-    { name: 'Professor Exams', href: '/exams', icon: 'exam' },
+    { name: 'Professor Exams', href: '/professor-exams', icon: 'exam' },
     { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy' },
     { name: 'Community', href: '/community', icon: 'users' },
   ];
