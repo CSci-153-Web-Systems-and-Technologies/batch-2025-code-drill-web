@@ -1,6 +1,6 @@
 'use server';
 
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import {
   ProfessorCourse,
   CourseWithProgress,
@@ -25,7 +25,7 @@ import {
  * Get all professor courses with optional progress aggregation
  */
 export async function getCourses(includeProgress = false): Promise<CourseWithProgress[]> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -91,7 +91,7 @@ export async function getCourses(includeProgress = false): Promise<CourseWithPro
  * Get a single course by ID
  */
 export async function getCourseById(courseId: string): Promise<ProfessorCourse> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('professor_courses')
@@ -107,7 +107,7 @@ export async function getCourseById(courseId: string): Promise<ProfessorCourse> 
  * Get course statistics for a user
  */
 export async function getCourseStats(courseId: string): Promise<CourseStats> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -148,7 +148,7 @@ export async function getCourseStats(courseId: string): Promise<CourseStats> {
  * Get all exam templates for a course
  */
 export async function getCourseExamTemplates(courseId: string): Promise<ExamTemplateWithProgress[]> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -187,7 +187,7 @@ export async function getCourseExamTemplates(courseId: string): Promise<ExamTemp
  * Get a single exam template by ID
  */
 export async function getExamTemplateById(templateId: string): Promise<ExamTemplate> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('exam_templates')
@@ -207,7 +207,7 @@ export async function getExamTemplateById(templateId: string): Promise<ExamTempl
  * Get all questions for an exam template
  */
 export async function getExamQuestions(templateId: string): Promise<ExamQuestion[]> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('exam_questions')
@@ -223,7 +223,7 @@ export async function getExamQuestions(templateId: string): Promise<ExamQuestion
  * Get a single question with user's answer
  */
 export async function getQuestionWithAnswer(questionId: string): Promise<ExamQuestionWithAnswer> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -262,7 +262,7 @@ export async function startExamSession(
   courseId: string,
   templateId: string
 ): Promise<ExamSessionData> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -312,7 +312,7 @@ export async function startExamSession(
  * Get user's exam progress
  */
 export async function getUserProgress(templateId: string): Promise<UserExamProgress | null> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -334,7 +334,7 @@ export async function getUserProgress(templateId: string): Promise<UserExamProgr
  * Get exam results
  */
 export async function getExamResults(progressId: string): Promise<ExamResults> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
 
   const { data: progress, error } = await supabase
     .from('user_exam_progress')
@@ -377,7 +377,7 @@ export async function submitBlanksAnswer(
   blankAnswers: BlankAnswerInput,
   timeSpent: number
 ): Promise<AnswerCheckResult> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -405,7 +405,7 @@ export async function submitOutputAnswer(
   outputAnswer: string,
   timeSpent: number
 ): Promise<AnswerCheckResult> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -434,7 +434,7 @@ export async function submitEssayAnswer(
   wordCount: number,
   timeSpent: number
 ): Promise<string> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -463,7 +463,7 @@ export async function autoSaveEssay(
   essayAnswer: string,
   wordCount: number
 ): Promise<void> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -518,7 +518,7 @@ export async function autoSaveEssay(
  * Track hint usage for a question
  */
 export async function trackHintUsage(questionId: string, progressId: string): Promise<void> {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
