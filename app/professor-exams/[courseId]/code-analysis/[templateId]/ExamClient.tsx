@@ -193,7 +193,7 @@ export default function CodeAnalysisExam({ courseId, templateId }: Props) {
   }
 
   const currentQuestion = sessionData.questions[currentQuestionIndex];
-  const blanks = currentQuestion.blanks || {};
+  const blanks = currentQuestion?.blanks || {};
   const blankCount = Object.keys(blanks).length;
 
   return (
@@ -238,7 +238,7 @@ export default function CodeAnalysisExam({ courseId, templateId }: Props) {
             <p className="text-gray-300 mb-6">{currentQuestion?.question_text}</p>
 
             {/* Code Snippet with Blanks */}
-            {currentQuestion.code_snippet && (
+            {currentQuestion?.code_snippet && (
               <div className="bg-gray-900 rounded-lg p-4 mb-6 font-mono text-sm overflow-x-auto">
                 <pre className="text-gray-300 whitespace-pre-wrap">
                   {currentQuestion.code_snippet
@@ -311,7 +311,7 @@ export default function CodeAnalysisExam({ courseId, templateId }: Props) {
                   )}
                 </div>
                 <p className="text-sm text-gray-300">
-                  Points earned: {feedback.points} / {currentQuestion.points}
+                  Points earned: {feedback.points} / {currentQuestion?.points}
                 </p>
               </div>
             )}
@@ -384,7 +384,7 @@ export default function CodeAnalysisExam({ courseId, templateId }: Props) {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Hints Panel */}
-          {showHints && currentQuestion.hints && currentQuestion.hints.length > 0 && (
+          {showHints && currentQuestion?.hints && currentQuestion.hints.length > 0 && (
             <Card>
               <h3 className="text-lg font-bold text-yellow-400 mb-4">Hints</h3>
               <ul className="space-y-2">
