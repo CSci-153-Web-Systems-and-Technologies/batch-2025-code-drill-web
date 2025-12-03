@@ -41,6 +41,12 @@ function wrapCodeForExecution(language: string, code: string, problemSlug: strin
 
 // Generate C++ wrapper with main() function based on problem
 function wrapCppCode(userCode: string, problemSlug: string): string {
+  // Check if user already has a complete program (includes main function)
+  if (userCode.includes('int main()') || userCode.includes('int main(')) {
+    // User provided complete code, return as-is
+    return userCode;
+  }
+
   // Add comprehensive C++ headers if not already present
   let wrappedCode = '';
   
