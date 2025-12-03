@@ -17,14 +17,6 @@ export default async function Home() {
   if (!user) {
     redirect('/login');
   }
-  const skills = [
-    { name: 'Arrays & Strings', current: 17, total: 20 },
-    { name: 'Linked Lists', current: 10, total: 15 },
-    { name: 'Trees & Graphs', current: 11, total: 25 },
-    { name: 'Dynamic Programming', current: 6, total: 20 },
-  ];
-
-
 
   return (
     <Container className="py-8">
@@ -100,7 +92,7 @@ export default async function Home() {
         {/* Left Column - Weekly Goal & Skill Progress */}
         <div className="lg:col-span-2 space-y-6">
           <WeeklyGoal current={7} goal={10} />
-          <SkillProgress skills={skills} />
+          <SkillProgress />
           <StreakCalendar />
         </div>
 

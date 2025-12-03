@@ -619,6 +619,28 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
         });
       }
 
+      // Update skill progress and award badges
+      let skillUpdateInfo = null;
+      const { data: skillResult, error: skillError } = await supabase.rpc(
+        'update_user_skill_progress',
+        {
+          p_user_id: user.id,
+          p_problem_id: problemId,
+          p_points_earned: pointsEarned,
+        }
+      );
+
+      if (skillError) {
+        if (skillError.code === 'PGRST202') {
+          console.warn('update_user_skill_progress RPC not found (migration not applied)');
+        } else {
+          console.error('Error updating skill progress:', skillError);
+        }
+      } else if (skillResult) {
+        skillUpdateInfo = skillResult;
+        console.log('Skill progress updated:', skillResult);
+      }
+
       return {
         success: true,
         results,
@@ -630,6 +652,7 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
           longestStreak: streakResult.longestStreak,
           gracePeriodUsed: streakResult.gracePeriodUsed,
         } : undefined,
+        skillUpdate: skillUpdateInfo,
       };
     } else {
       // If not accepted, still record an attempt for analytics if RPC exists
