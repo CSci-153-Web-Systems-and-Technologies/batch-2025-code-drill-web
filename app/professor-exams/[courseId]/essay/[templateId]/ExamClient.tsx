@@ -201,6 +201,29 @@ export default function EssayExam({ courseId, templateId }: Props) {
     );
   }
 
+  // Check if exam has no questions
+  if (!sessionData.questions || sessionData.questions.length === 0) {
+    return (
+      <Container className="py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <svg className="w-16 h-16 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <h2 className="text-xl font-bold text-gray-300 mb-2">No Questions Available</h2>
+            <p className="text-gray-400 mb-6">This exam template doesn&apos;t have any questions yet.</p>
+            <button
+              onClick={() => router.back()}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </Container>
+    );
+  }
+
   const currentQuestion = sessionData.questions[currentQuestionIndex];
   const requirements = currentQuestion?.essay_requirements;
   const minWords = requirements?.word_count?.[0] || 200;
