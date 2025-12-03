@@ -381,9 +381,16 @@ export async function runCode({ problemId, language, code, testCases }: RunCodeP
     
     const problemSlug = problem?.slug || '';
     
-    // Execute test cases sequentially to avoid Judge0 rate-limit bursts
+    // Execute test cases sequentially with delays to avoid Judge0 rate-limit bursts
     const results: Array<{ input: string; expectedOutput: string; actualOutput: string; passed: boolean; error?: string; }> = [];
-    for (const testCase of testCases) {
+    for (let i = 0; i < testCases.length; i++) {
+      const testCase = testCases[i];
+      
+      // Add delay between test cases (except first one)
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
       try {
         const result = await executeWithJudge0(language, code, testCase.input, problemSlug);
         
@@ -395,6 +402,10 @@ export async function runCode({ problemId, language, code, testCases }: RunCodeP
             passed: false,
             error: result.error,
           });
+          // If rate limited, stop executing remaining test cases
+          if (result.status === 'Too Many Requests') {
+            break;
+          }
           continue;
         }
 
@@ -474,44 +485,61 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       ...(problem.hidden_test_cases || []),
     ];
 
-    // Execute all test cases in parallel using Judge0 API
-    const executionPromises = allTestCases.map(async (testCase) => {
+    // Execute test cases sequentially with delays to avoid Judge0 rate limiting
+    const results: Array<{ input: string; expectedOutput: string; actualOutput: string; passed: boolean; error?: string; }> = [];
+    
+    for (let i = 0; i < allTestCases.length; i++) {
+      const testCase = allTestCases[i];
+      
+      // Add delay between test cases (except first one)
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
       try {
         const result = await executeWithJudge0(language, code, testCase.input, problem.slug);
         
         if (result.error) {
-          return {
+          results.push({
             input: testCase.input,
             expectedOutput: testCase.output,
             actualOutput: result.output || '',
             passed: false,
             error: result.error,
-          };
+          });
+          // If rate limited, return early with partial results
+          if (result.status === 'Too Many Requests') {
+            return {
+              success: false,
+              results,
+              error: 'Rate limit exceeded. Please wait a moment and try again.',
+              status: 'Rate Limited',
+            };
+          }
+          continue;
         }
 
         const expectedOutput = testCase.output.trim();
         const actualOutput = result.output.trim();
         const passed = expectedOutput === actualOutput;
 
-        return {
+        results.push({
           input: testCase.input,
           expectedOutput: testCase.output,
           actualOutput: result.output,
           passed,
           error: undefined,
-        };
+        });
       } catch (error) {
-        return {
+        results.push({
           input: testCase.input,
           expectedOutput: testCase.output,
           actualOutput: '',
           passed: false,
           error: error instanceof Error ? error.message : 'Execution failed',
-        };
+        });
       }
-    });
-
-    const results = await Promise.all(executionPromises);
+    }
 
     const allPassed = results.every((r) => r.passed);
     const hasCompilationError = results.some((r) => r.error && r.error.includes('error'));
