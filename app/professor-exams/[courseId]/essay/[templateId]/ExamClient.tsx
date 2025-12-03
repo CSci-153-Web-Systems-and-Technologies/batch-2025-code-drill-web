@@ -246,8 +246,8 @@ export default function EssayExam({ courseId, templateId }: Props) {
         <div className="lg:col-span-2 space-y-6">
           {/* Question */}
           <Card>
-            <h2 className="text-xl font-bold mb-4">{currentQuestion.title}</h2>
-            <p className="text-gray-300 mb-6">{currentQuestion.question_text}</p>
+            <h2 className="text-xl font-bold mb-4">{currentQuestion?.title}</h2>
+            <p className="text-gray-300 mb-6">{currentQuestion?.question_text}</p>
 
             {/* Context */}
             {currentQuestion.essay_context && (
