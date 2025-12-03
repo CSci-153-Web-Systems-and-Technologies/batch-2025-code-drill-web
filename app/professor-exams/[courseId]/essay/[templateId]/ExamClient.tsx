@@ -202,7 +202,7 @@ export default function EssayExam({ courseId, templateId }: Props) {
   }
 
   const currentQuestion = sessionData.questions[currentQuestionIndex];
-  const requirements = currentQuestion.essay_requirements;
+  const requirements = currentQuestion?.essay_requirements;
   const minWords = requirements?.word_count?.[0] || 200;
   const maxWords = requirements?.word_count?.[1] || 400;
   const meetsMinimum = wordCount >= minWords;
@@ -250,7 +250,7 @@ export default function EssayExam({ courseId, templateId }: Props) {
             <p className="text-gray-300 mb-6">{currentQuestion?.question_text}</p>
 
             {/* Context */}
-            {currentQuestion.essay_context && (
+            {currentQuestion?.essay_context && (
               <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">
                 <h3 className="text-sm font-semibold text-purple-400 mb-2">Context</h3>
                 <p className="text-sm text-gray-300 whitespace-pre-wrap">
@@ -427,7 +427,7 @@ export default function EssayExam({ courseId, templateId }: Props) {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Structure Guide */}
-          {showStructure && currentQuestion.essay_structure_guide && (
+          {showStructure && currentQuestion?.essay_structure_guide && (
             <Card>
               <h3 className="text-lg font-bold text-purple-400 mb-4">Structure Guide</h3>
               <div className="text-sm text-gray-300 whitespace-pre-wrap">

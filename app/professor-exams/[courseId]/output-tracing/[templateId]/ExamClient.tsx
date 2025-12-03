@@ -231,7 +231,7 @@ export default function OutputTracingExam({ courseId, templateId }: Props) {
             <p className="text-gray-300 mb-6">{currentQuestion?.question_text}</p>
 
             {/* Code Snippet */}
-            {currentQuestion.code_snippet && (
+            {currentQuestion?.code_snippet && (
               <div className="bg-gray-900 rounded-lg p-4 mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-500 uppercase">Code</span>
@@ -285,7 +285,7 @@ export default function OutputTracingExam({ courseId, templateId }: Props) {
                   )}
                 </div>
                 <p className="text-sm text-gray-300">
-                  Points earned: {feedback.points} / {currentQuestion.points}
+                  Points earned: {feedback.points} / {currentQuestion?.points}
                 </p>
                 {!feedback.correct && (
                   <p className="text-xs text-gray-400 mt-2">
@@ -363,7 +363,7 @@ export default function OutputTracingExam({ courseId, templateId }: Props) {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Tips Panel */}
-          {showTips && currentQuestion.output_tips && currentQuestion.output_tips.length > 0 && (
+          {showTips && currentQuestion?.output_tips && currentQuestion.output_tips.length > 0 && (
             <Card>
               <h3 className="text-lg font-bold text-yellow-400 mb-4">Tips</h3>
               <ul className="space-y-2">
