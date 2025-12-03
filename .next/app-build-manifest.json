@@ -1,9 +1,9 @@
 {
   "pages": {
-    "/problems/page": [
+    "/problems/[slug]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/problems/page.js"
+      "static/chunks/app/problems/[slug]/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -16,20 +16,25 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
-    "/profile/page": [
+    "/professor-exams/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/profile/page.js"
+      "static/chunks/app/professor-exams/page.js"
     ],
-    "/practice/page": [
+    "/professor-exams/[courseId]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/practice/page.js"
+      "static/chunks/app/professor-exams/[courseId]/page.js"
     ],
-    "/practice/history/page": [
+    "/professor-exams/[courseId]/code-analysis/[templateId]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/practice/history/page.js"
+      "static/chunks/app/professor-exams/[courseId]/code-analysis/[templateId]/page.js"
+    ],
+    "/professor-exams/[courseId]/output-tracing/[templateId]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/professor-exams/[courseId]/output-tracing/[templateId]/page.js"
     ]
   }
 }
