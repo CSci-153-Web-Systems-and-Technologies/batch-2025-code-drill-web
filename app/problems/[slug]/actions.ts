@@ -41,6 +41,12 @@ function wrapCodeForExecution(language: string, code: string, problemSlug: strin
 
 // Generate C++ wrapper with main() function based on problem
 function wrapCppCode(userCode: string, problemSlug: string): string {
+  // Check if user already has a complete program (includes main function)
+  if (userCode.includes('int main()') || userCode.includes('int main(')) {
+    // User provided complete code, return as-is
+    return userCode;
+  }
+
   // Add comprehensive C++ headers if not already present
   let wrappedCode = '';
   
@@ -249,8 +255,10 @@ async function executeWithJudge0(
 ): Promise<{ output: string; error?: string; status?: string }> {
   const JUDGE0_API_URL = process.env.JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.com';
   const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
+  const isRapidAPI = JUDGE0_API_URL.includes('rapidapi.com');
 
-  if (!JUDGE0_API_KEY) {
+  // Only require API key for RapidAPI
+  if (isRapidAPI && !JUDGE0_API_KEY) {
     throw new Error('Judge0 API key not configured');
   }
 
@@ -277,16 +285,22 @@ async function executeWithJudge0(
   }
 
   try {
+    // Build headers based on API type
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (isRapidAPI && JUDGE0_API_KEY) {
+      headers['X-RapidAPI-Key'] = JUDGE0_API_KEY;
+      headers['X-RapidAPI-Host'] = 'judge0-ce.p.rapidapi.com';
+    }
+
     // Submit code for execution
     const submitResponse = await fetchWithBackoff(
       `${JUDGE0_API_URL}/submissions?base64_encoded=true&wait=false`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-RapidAPI-Key': JUDGE0_API_KEY,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-        },
+        headers,
         body: JSON.stringify({
           source_code: Buffer.from(executableCode).toString('base64'),
           language_id: languageId,
@@ -314,10 +328,7 @@ async function executeWithJudge0(
       const resultResponse = await fetchWithBackoff(
         `${JUDGE0_API_URL}/submissions/${token}?base64_encoded=true`,
         {
-          headers: {
-            'X-RapidAPI-Key': JUDGE0_API_KEY,
-            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-          },
+          headers,
         }
       );
 
@@ -381,9 +392,16 @@ export async function runCode({ problemId, language, code, testCases }: RunCodeP
     
     const problemSlug = problem?.slug || '';
     
-    // Execute test cases sequentially to avoid Judge0 rate-limit bursts
+    // Execute test cases sequentially with delays to avoid Judge0 rate-limit bursts
     const results: Array<{ input: string; expectedOutput: string; actualOutput: string; passed: boolean; error?: string; }> = [];
-    for (const testCase of testCases) {
+    for (let i = 0; i < testCases.length; i++) {
+      const testCase = testCases[i];
+      
+      // Add delay between test cases (except first one)
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
       try {
         const result = await executeWithJudge0(language, code, testCase.input, problemSlug);
         
@@ -395,6 +413,10 @@ export async function runCode({ problemId, language, code, testCases }: RunCodeP
             passed: false,
             error: result.error,
           });
+          // If rate limited, stop executing remaining test cases
+          if (result.status === 'Too Many Requests') {
+            break;
+          }
           continue;
         }
 
@@ -474,44 +496,61 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
       ...(problem.hidden_test_cases || []),
     ];
 
-    // Execute all test cases in parallel using Judge0 API
-    const executionPromises = allTestCases.map(async (testCase) => {
+    // Execute test cases sequentially with delays to avoid Judge0 rate limiting
+    const results: Array<{ input: string; expectedOutput: string; actualOutput: string; passed: boolean; error?: string; }> = [];
+    
+    for (let i = 0; i < allTestCases.length; i++) {
+      const testCase = allTestCases[i];
+      
+      // Add delay between test cases (except first one)
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
       try {
         const result = await executeWithJudge0(language, code, testCase.input, problem.slug);
         
         if (result.error) {
-          return {
+          results.push({
             input: testCase.input,
             expectedOutput: testCase.output,
             actualOutput: result.output || '',
             passed: false,
             error: result.error,
-          };
+          });
+          // If rate limited, return early with partial results
+          if (result.status === 'Too Many Requests') {
+            return {
+              success: false,
+              results,
+              error: 'Rate limit exceeded. Please wait a moment and try again.',
+              status: 'Rate Limited',
+            };
+          }
+          continue;
         }
 
         const expectedOutput = testCase.output.trim();
         const actualOutput = result.output.trim();
         const passed = expectedOutput === actualOutput;
 
-        return {
+        results.push({
           input: testCase.input,
           expectedOutput: testCase.output,
           actualOutput: result.output,
           passed,
           error: undefined,
-        };
+        });
       } catch (error) {
-        return {
+        results.push({
           input: testCase.input,
           expectedOutput: testCase.output,
           actualOutput: '',
           passed: false,
           error: error instanceof Error ? error.message : 'Execution failed',
-        };
+        });
       }
-    });
-
-    const results = await Promise.all(executionPromises);
+    }
 
     const allPassed = results.every((r) => r.passed);
     const hasCompilationError = results.some((r) => r.error && r.error.includes('error'));
@@ -619,6 +658,28 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
         });
       }
 
+      // Update skill progress and award badges
+      let skillUpdateInfo = null;
+      const { data: skillResult, error: skillError } = await supabase.rpc(
+        'update_user_skill_progress',
+        {
+          p_user_id: user.id,
+          p_problem_id: problemId,
+          p_points_earned: pointsEarned,
+        }
+      );
+
+      if (skillError) {
+        if (skillError.code === 'PGRST202') {
+          console.warn('update_user_skill_progress RPC not found (migration not applied)');
+        } else {
+          console.error('Error updating skill progress:', skillError);
+        }
+      } else if (skillResult) {
+        skillUpdateInfo = skillResult;
+        console.log('Skill progress updated:', skillResult);
+      }
+
       return {
         success: true,
         results,
@@ -630,6 +691,7 @@ export async function submitCode({ problemId, language, code }: SubmitCodeParams
           longestStreak: streakResult.longestStreak,
           gracePeriodUsed: streakResult.gracePeriodUsed,
         } : undefined,
+        skillUpdate: skillUpdateInfo,
       };
     } else {
       // If not accepted, still record an attempt for analytics if RPC exists
