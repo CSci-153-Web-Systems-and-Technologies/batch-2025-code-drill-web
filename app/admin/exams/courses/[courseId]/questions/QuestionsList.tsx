@@ -5,6 +5,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
 import BulkActionsToolbar from '@/app/admin/exams/BulkActionsToolbar';
+import { deleteQuestion } from '@/app/professor-exams/actions';
 
 interface Question {
   id: string;
@@ -14,6 +15,7 @@ interface Question {
   points: number;
   is_published: boolean;
   question_number: number;
+  template_id: string;
 }
 
 interface QuestionsListProps {
@@ -25,16 +27,19 @@ export default function QuestionsList({ courseId, templateId }: QuestionsListPro
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadQuestions();
-  }, [templateId]);
+  }, [templateId, courseId]);
 
   async function loadQuestions() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (templateId) params.append('templateId', templateId);
+      if (courseId) params.append('courseId', courseId);
       
       const res = await fetch(`/api/admin/questions?${params}`);
       const data = await res.json();
@@ -58,6 +63,23 @@ export default function QuestionsList({ courseId, templateId }: QuestionsListPro
     );
   }
 
+  async function handleDelete(questionId: string) {
+    setDeleting(true);
+    try {
+      const result = await deleteQuestion(questionId);
+      if (result.success) {
+        setDeleteConfirm(null);
+        loadQuestions();
+      } else {
+        alert(`Failed to delete question: ${result.error}`);
+      }
+    } catch (error) {
+      alert('An error occurred while deleting the question');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <Card><p className="text-gray-400">Loading questions...</p></Card>;
   }
@@ -67,7 +89,7 @@ export default function QuestionsList({ courseId, templateId }: QuestionsListPro
       <Card>
         <div className="text-center py-8">
           <p className="text-gray-400 mb-4">No questions yet</p>
-          <Link href={`/admin/exams/courses/${courseId}/questions/new`}>
+          <Link href={`/admin/exams/questions/new?courseId=${courseId}`}>
             <Button>Create Question</Button>
           </Link>
         </div>
@@ -93,7 +115,7 @@ export default function QuestionsList({ courseId, templateId }: QuestionsListPro
             <Button variant="secondary" onClick={toggleAll}>
               {selectedQuestions.length === questions.length ? 'Deselect All' : 'Select All'}
             </Button>
-            <Link href={`/admin/exams/courses/${courseId}/questions/new`}>
+            <Link href={`/admin/exams/questions/new?courseId=${courseId}`}>
               <Button>Add Question</Button>
             </Link>
           </div>
@@ -148,11 +170,47 @@ export default function QuestionsList({ courseId, templateId }: QuestionsListPro
                 <Link href={`/professor-exams/preview/${q.id}`}>
                   <Button variant="secondary" className="text-sm">Preview</Button>
                 </Link>
+                <Button
+                  variant="secondary"
+                  onClick={() => setDeleteConfirm({ id: q.id, title: q.title })}
+                  className="text-sm text-red-400 hover:text-red-300"
+                >
+                  Delete
+                </Button>
               </div>
             </div>
           ))}
         </div>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <Card className="max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-white mb-4">Delete Question?</h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to delete <span className="font-semibold text-white">"{deleteConfirm.title}"</span>?
+              This will also delete all version history and preview tokens. This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="secondary"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => handleDelete(deleteConfirm.id)}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </>
   );
 }

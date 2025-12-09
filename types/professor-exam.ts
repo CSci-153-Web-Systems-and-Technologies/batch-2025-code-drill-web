@@ -82,6 +82,12 @@ export interface ExamQuestion {
   difficulty: DifficultyLevel | null;
   hints: string[] | null;
   time_estimate_minutes: number | null;
+  
+  // Publishing fields
+  is_published: boolean;
+  published_at: string | null;
+  published_by: string | null;
+  
   created_at: string;
   updated_at: string;
 }

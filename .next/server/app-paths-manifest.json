@@ -1,7 +1,6 @@
 {
-  "/professor-exams/page": "app/professor-exams/page.js",
-  "/page": "app/page.js",
-  "/professor-exams/[courseId]/code-analysis/[templateId]/page": "app/professor-exams/[courseId]/code-analysis/[templateId]/page.js",
-  "/professor-exams/[courseId]/page": "app/professor-exams/[courseId]/page.js",
-  "/professor-exams/[courseId]/output-tracing/[templateId]/page": "app/professor-exams/[courseId]/output-tracing/[templateId]/page.js"
+  "/admin/exams/courses/[courseId]/questions/page": "app/admin/exams/courses/[courseId]/questions/page.js",
+  "/admin/exams/questions/[questionId]/edit/page": "app/admin/exams/questions/[questionId]/edit/page.js",
+  "/admin/exams/questions/new/page": "app/admin/exams/questions/new/page.js",
+  "/admin/exams/page": "app/admin/exams/page.js"
 }
