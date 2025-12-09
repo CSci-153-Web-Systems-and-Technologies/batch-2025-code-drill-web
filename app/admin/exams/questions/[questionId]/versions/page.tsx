@@ -63,11 +63,11 @@ export default async function VersionsPage({ params }: VersionsPageProps) {
 
       <Card className="mt-6">
         <h2 className="text-lg font-semibold text-white mb-2">Differences</h2>
-        {diff.success && diff.differences.length === 0 ? (
+        {diff.success && diff.differences && diff.differences.length === 0 ? (
           <p className="text-gray-400">No differences detected.</p>
         ) : (
           <div className="space-y-2">
-            {diff.success && diff.differences.map((d:any) => (
+            {diff.success && diff.differences && diff.differences.map((d:any) => (
               <div key={d.field} className="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded">
                 <p className="text-yellow-300 font-semibold">{d.field}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
