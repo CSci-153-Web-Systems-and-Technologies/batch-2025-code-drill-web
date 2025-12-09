@@ -3,6 +3,7 @@ import { checkProfessorRole } from '@/lib/auth-roles';
 import { getCourseById, getCourseExamTemplates, createQuestion } from '@/app/professor-exams/actions';
 import Container from '@/components/shared/Container';
 import QuestionForm from '@/components/admin/QuestionForm';
+import Link from 'next/link';
 
 interface NewQuestionPageProps {
   searchParams: { courseId?: string; templateId?: string };
@@ -68,7 +69,7 @@ export default async function NewQuestionPage({ searchParams }: NewQuestionPageP
           <p className="text-gray-400 mb-4">Choose which exam this question belongs to:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {templates.map((template) => (
-              <a
+              <Link
                 key={template.id}
                 href={`/admin/exams/questions/new?courseId=${courseId}&templateId=${template.id}`}
                 className="block p-4 bg-gray-800 border border-gray-700 rounded-lg hover:border-blue-500 transition-colors"
@@ -80,7 +81,7 @@ export default async function NewQuestionPage({ searchParams }: NewQuestionPageP
                   <span>{template.question_count} questions</span>
                   <span>{template.total_points} pts</span>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
