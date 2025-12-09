@@ -36,7 +36,7 @@ export default async function NewQuestionPage({ searchParams }: NewQuestionPageP
     return result;
   }
 
-  function handleCancel() {
+  async function handleCancel() {
     'use server';
     redirect(`/admin/exams/courses/${courseId}/questions`);
   }
