@@ -5,12 +5,14 @@ import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
+import EditQuestionForm from './EditQuestionForm';
 
 interface EditPageProps {
   params: { questionId: string };
+  searchParams: { view?: 'edit' | 'manage' };
 }
 
-export default async function EditQuestionPage({ params }: EditPageProps) {
+export default async function EditQuestionPage({ params, searchParams }: EditPageProps) {
   const user = await checkProfessorRole();
   if (!user) redirect('/professor-exams');
 
@@ -18,6 +20,23 @@ export default async function EditQuestionPage({ params }: EditPageProps) {
   if (!question) notFound();
 
   const versions = await getQuestionVersionHistory(params.questionId);
+  
+  const view = searchParams.view || 'edit';
+  
+  // Extract courseId from template
+  async function getCourseIdFromTemplate() {
+    'use server';
+    const { createClient } = await import('@/lib/supabase/server');
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('exam_templates')
+      .select('course_id')
+      .eq('id', question.template_id)
+      .single();
+    return data?.course_id || '';
+  }
+  
+  const courseId = await getCourseIdFromTemplate();
 
   async function handlePublish() {
     'use server';
@@ -47,8 +66,15 @@ export default async function EditQuestionPage({ params }: EditPageProps) {
   return (
     <Container>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Edit Question</h1>
+        <h1 className="text-2xl font-bold text-white">
+          {view === 'edit' ? 'Edit Question' : 'Manage Question'}
+        </h1>
         <div className="flex gap-2">
+          <Link href={`?view=${view === 'edit' ? 'manage' : 'edit'}`}>
+            <Button variant="secondary">
+              {view === 'edit' ? 'View Management' : 'Edit Content'}
+            </Button>
+          </Link>
           <Link href={`/professor-exams/preview/${params.questionId}`}>
             <Button variant="secondary">Preview</Button>
           </Link>
@@ -61,71 +87,77 @@ export default async function EditQuestionPage({ params }: EditPageProps) {
         </div>
       </div>
 
-      <Card className="mb-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm text-gray-400">Type</p>
-            <p className="text-white capitalize">{question.question_type?.replace('_',' ')}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400">Difficulty</p>
-            <p className="text-white">{question.difficulty || '—'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400">Published</p>
-            <p className="text-white">{question.is_published ? 'Yes' : 'No'}</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="mb-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Content</h2>
-        <h3 className="text-lg font-semibold text-white mb-2">{question.title}</h3>
-        <div className="text-gray-300 whitespace-pre-wrap mb-4">{question.question_text}</div>
-        {question.code_snippet && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-400 mb-2">Code Snippet</p>
-            <pre className="bg-gray-900 p-3 rounded"><code>{question.code_snippet}</code></pre>
-          </div>
-        )}
-        {question.expected_output && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-400 mb-2">Expected Output</p>
-            <pre className="bg-gray-900 p-3 rounded"><code>{question.expected_output}</code></pre>
-          </div>
-        )}
-      </Card>
-
-      <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-white">Version History</h2>
-          <Link href={`/admin/exams/questions/${params.questionId}/versions`}>
-            <Button variant="secondary">Compare Versions</Button>
-          </Link>
-        </div>
-        {versions.length === 0 ? (
-          <p className="text-gray-400">No versions yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {versions.map((v:any) => (
-              <div key={v.id} className="flex items-center justify-between bg-gray-800/40 p-3 rounded">
-                <div>
-                  <p className="text-white font-semibold">Version {v.version_number}</p>
-                  <p className="text-sm text-gray-400">{new Date(v.changed_at).toLocaleString()} • {v.user_email || 'unknown'}</p>
-                  {v.change_description && (
-                    <p className="text-sm text-gray-300">{v.change_description}</p>
-                  )}
-                </div>
-                <form action={handleRollback}>
-                  <input type="hidden" name="versionNumber" value={v.version_number} />
-                  <Button variant="secondary">Rollback</Button>
-                </form>
+      {view === 'edit' ? (
+        <EditQuestionForm question={question} courseId={courseId} />
+      ) : (
+        <>
+          <Card className="mb-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-400">Type</p>
+                <p className="text-white capitalize">{question.question_type?.replace('_',' ')}</p>
               </div>
-            ))}
-          </div>
-        )}
-      </Card>
+              <div>
+                <p className="text-sm text-gray-400">Difficulty</p>
+                <p className="text-white">{question.difficulty || '—'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Published</p>
+                <p className="text-white">{question.is_published ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="mb-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Content</h2>
+            <h3 className="text-lg font-semibold text-white mb-2">{question.title}</h3>
+            <div className="text-gray-300 whitespace-pre-wrap mb-4">{question.question_text}</div>
+            {question.code_snippet && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-400 mb-2">Code Snippet</p>
+                <pre className="bg-gray-900 p-3 rounded"><code>{question.code_snippet}</code></pre>
+              </div>
+            )}
+            {question.expected_output && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-400 mb-2">Expected Output</p>
+                <pre className="bg-gray-900 p-3 rounded"><code>{question.expected_output}</code></pre>
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white">Version History</h2>
+              <Link href={`/admin/exams/questions/${params.questionId}/versions`}>
+                <Button variant="secondary">Compare Versions</Button>
+              </Link>
+            </div>
+            {versions.length === 0 ? (
+              <p className="text-gray-400">No versions yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {versions.map((v:any) => (
+                  <div key={v.id} className="flex items-center justify-between bg-gray-800/40 p-3 rounded">
+                    <div>
+                      <p className="text-white font-semibold">Version {v.version_number}</p>
+                      <p className="text-sm text-gray-400">{new Date(v.changed_at).toLocaleString()} • {v.user_email || 'unknown'}</p>
+                      {v.change_description && (
+                        <p className="text-sm text-gray-300">{v.change_description}</p>
+                      )}
+                    </div>
+                    <form action={handleRollback}>
+                      <input type="hidden" name="versionNumber" value={v.version_number} />
+                      <Button variant="secondary">Rollback</Button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </>
+      )}
     </Container>
   );
 }
