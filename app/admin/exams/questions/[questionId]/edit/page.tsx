@@ -14,11 +14,10 @@ export default async function EditQuestionPage({ params }: EditPageProps) {
   const user = await checkProfessorRole();
   if (!user) redirect('/professor-exams');
 
-  const q = await getQuestionWithAnswer(params.questionId);
-  if (!q?.question) notFound();
+  const question = await getQuestionWithAnswer(params.questionId);
+  if (!question) notFound();
 
   const versions = await getQuestionVersionHistory(params.questionId);
-  const question = q.question;
 
   async function handlePublish() {
     'use server';
