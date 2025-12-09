@@ -69,7 +69,7 @@ export default function QuestionsList({ courseId, templateId }: QuestionsListPro
       <Card>
         <div className="text-center py-8">
           <p className="text-gray-400 mb-4">No questions yet</p>
-          <Link href={`/admin/exams/courses/${courseId}/questions/new`}>
+          <Link href={`/admin/exams/questions/new?courseId=${courseId}`}>
             <Button>Create Question</Button>
           </Link>
         </div>
@@ -95,7 +95,7 @@ export default function QuestionsList({ courseId, templateId }: QuestionsListPro
             <Button variant="secondary" onClick={toggleAll}>
               {selectedQuestions.length === questions.length ? 'Deselect All' : 'Select All'}
             </Button>
-            <Link href={`/admin/exams/courses/${courseId}/questions/new`}>
+            <Link href={`/admin/exams/questions/new?courseId=${courseId}`}>
               <Button>Add Question</Button>
             </Link>
           </div>
