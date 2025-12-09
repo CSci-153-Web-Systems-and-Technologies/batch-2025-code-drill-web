@@ -14,6 +14,7 @@ interface Question {
   points: number;
   is_published: boolean;
   question_number: number;
+  template_id: string;
 }
 
 interface QuestionsListProps {
@@ -28,13 +29,14 @@ export default function QuestionsList({ courseId, templateId }: QuestionsListPro
 
   useEffect(() => {
     loadQuestions();
-  }, [templateId]);
+  }, [templateId, courseId]);
 
   async function loadQuestions() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (templateId) params.append('templateId', templateId);
+      if (courseId) params.append('courseId', courseId);
       
       const res = await fetch(`/api/admin/questions?${params}`);
       const data = await res.json();
