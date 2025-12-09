@@ -4,6 +4,7 @@ import { getQuestionVersionHistory, compareQuestionVersions } from '@/app/profes
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Link from 'next/link';
 
 interface VersionsPageProps { params: { questionId: string } }
 
@@ -22,7 +23,9 @@ export default async function VersionsPage({ params }: VersionsPageProps) {
     <Container>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Version Comparison</h1>
-        <Button asChild variant="secondary"><a href={`/admin/exams/questions/${params.questionId}/edit`}>Back to Editor</a></Button>
+        <Link href={`/admin/exams/questions/${params.questionId}/edit`}>
+          <Button variant="secondary">Back to Editor</Button>
+        </Link>
       </div>
 
       {!diff.success ? (
