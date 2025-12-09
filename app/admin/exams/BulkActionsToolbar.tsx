@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { bulkPublishQuestions, bulkUnpublishQuestions } from '@/app/professor-exams/actions';
+import { bulkPublishQuestions, bulkUnpublishQuestions, deleteQuestion } from '@/app/professor-exams/actions';
 
 interface Question {
   id: string;
@@ -140,6 +140,56 @@ export default function BulkActionsToolbar({
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedQuestions.length === 0) return;
+
+    if (
+      !confirm(
+        `⚠️ DELETE ${selectedQuestions.length} question(s)?\n\nThis will permanently delete:\n- All question content\n- Version history\n- Preview tokens\n- Student answers (if any)\n\nThis action CANNOT be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const questionId of selectedQuestions) {
+        const result = await deleteQuestion(questionId);
+        if (result.success) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      }
+
+      if (errorCount === 0) {
+        setMessage({
+          type: 'success',
+          text: `Successfully deleted ${successCount} question(s)`,
+        });
+      } else {
+        setMessage({
+          type: 'error',
+          text: `Deleted ${successCount} question(s), failed to delete ${errorCount}`,
+        });
+      }
+
+      onActionComplete();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: 'An error occurred while deleting questions',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (selectedQuestions.length === 0) {
     return null;
   }
@@ -174,6 +224,13 @@ export default function BulkActionsToolbar({
               {loading ? 'Unpublishing...' : 'Unpublish Selected'}
             </Button>
           )}
+          <Button
+            onClick={handleBulkDelete}
+            disabled={loading}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            {loading ? 'Deleting...' : 'Delete Selected'}
+          </Button>
         </div>
       </div>
 

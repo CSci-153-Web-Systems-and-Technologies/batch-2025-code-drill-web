@@ -4,6 +4,7 @@ import { getQuestionVersionHistory, compareQuestionVersions } from '@/app/profes
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Link from 'next/link';
 
 interface VersionsPageProps { params: { questionId: string } }
 
@@ -22,7 +23,9 @@ export default async function VersionsPage({ params }: VersionsPageProps) {
     <Container>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Version Comparison</h1>
-        <Button asChild variant="secondary"><a href={`/admin/exams/questions/${params.questionId}/edit`}>Back to Editor</a></Button>
+        <Link href={`/admin/exams/questions/${params.questionId}/edit`}>
+          <Button variant="secondary">Back to Editor</Button>
+        </Link>
       </div>
 
       {!diff.success ? (
@@ -60,11 +63,11 @@ export default async function VersionsPage({ params }: VersionsPageProps) {
 
       <Card className="mt-6">
         <h2 className="text-lg font-semibold text-white mb-2">Differences</h2>
-        {diff.success && diff.differences.length === 0 ? (
+        {diff.success && diff.differences && diff.differences.length === 0 ? (
           <p className="text-gray-400">No differences detected.</p>
         ) : (
           <div className="space-y-2">
-            {diff.success && diff.differences.map((d:any) => (
+            {diff.success && diff.differences && diff.differences.map((d:any) => (
               <div key={d.field} className="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded">
                 <p className="text-yellow-300 font-semibold">{d.field}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">

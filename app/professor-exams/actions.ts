@@ -1001,3 +1001,245 @@ export async function getQuestionByPreviewToken(token: string) {
     views_remaining: validation.views_remaining,
   };
 }
+
+// ============================================================================
+// QUESTION CRUD ACTIONS
+// ============================================================================
+
+/**
+ * Create a new question
+ */
+export async function createQuestion(data: {
+  template_id: string;
+  title: string;
+  question_text: string;
+  question_type: 'fill_blanks' | 'trace_output' | 'essay';
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  points: number;
+  code_snippet?: string | null;
+  blanks?: Record<string, string> | null;
+  expected_output?: string | null;
+  output_tips?: string[] | null;
+  essay_context?: string | null;
+  essay_requirements?: any | null;
+  essay_structure_guide?: string | null;
+  hints?: string[];
+  time_estimate_minutes?: number | null;
+  question_number?: number;
+}) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
+  // Get next question number if not provided
+  let questionNumber = data.question_number;
+  if (!questionNumber) {
+    const { data: existingQuestions } = await supabase
+      .from('exam_questions')
+      .select('question_number')
+      .eq('template_id', data.template_id)
+      .order('question_number', { ascending: false })
+      .limit(1);
+    
+    questionNumber = existingQuestions && existingQuestions.length > 0 
+      ? existingQuestions[0].question_number + 1 
+      : 1;
+  }
+
+  // Insert the question
+  const { data: newQuestion, error: insertError } = await supabase
+    .from('exam_questions')
+    .insert({
+      template_id: data.template_id,
+      question_number: questionNumber,
+      title: data.title,
+      question_text: data.question_text,
+      question_type: data.question_type,
+      difficulty: data.difficulty,
+      points: data.points,
+      code_snippet: data.code_snippet || null,
+      blanks: data.blanks || null,
+      expected_output: data.expected_output || null,
+      output_tips: data.output_tips || null,
+      essay_context: data.essay_context || null,
+      essay_requirements: data.essay_requirements || null,
+      essay_structure_guide: data.essay_structure_guide || null,
+      hints: data.hints || null,
+      time_estimate_minutes: data.time_estimate_minutes || null,
+      is_published: false,
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error('Error creating question:', insertError);
+    return { success: false, error: insertError.message };
+  }
+
+  // Create initial version snapshot
+  const { error: versionError } = await supabase
+    .from('exam_question_versions')
+    .insert({
+      question_id: newQuestion.id,
+      version_number: 1,
+      question_data: newQuestion,
+      changed_by: user.id,
+      change_description: 'Initial version',
+    });
+
+  if (versionError) {
+    console.error('Error creating initial version:', versionError);
+    // Don't fail the entire operation if version creation fails
+  }
+
+  return { 
+    success: true, 
+    questionId: newQuestion.id,
+    question: newQuestion,
+  };
+}
+
+/**
+ * Update an existing question
+ */
+export async function updateQuestion(data: {
+  id: string;
+  template_id?: string;
+  question_number?: number;
+  title?: string;
+  question_text?: string;
+  question_type: 'fill_blanks' | 'trace_output' | 'essay';
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
+  points?: number;
+  code_snippet?: string | null;
+  blanks?: Record<string, string> | null;
+  expected_output?: string | null;
+  output_tips?: string[] | null;
+  essay_context?: string | null;
+  essay_requirements?: any | null;
+  essay_structure_guide?: string | null;
+  hints?: string[];
+  time_estimate_minutes?: number | null;
+}) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
+  // Get the current question for version comparison
+  const { data: currentQuestion, error: fetchError } = await supabase
+    .from('exam_questions')
+    .select('*')
+    .eq('id', data.id)
+    .single();
+
+  if (fetchError || !currentQuestion) {
+    return { success: false, error: 'Question not found' };
+  }
+
+  // Prepare update data (only include provided fields)
+  const updateData: any = {};
+  if (data.template_id !== undefined) updateData.template_id = data.template_id;
+  if (data.question_number !== undefined) updateData.question_number = data.question_number;
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.question_text !== undefined) updateData.question_text = data.question_text;
+  if (data.question_type !== undefined) updateData.question_type = data.question_type;
+  if (data.difficulty !== undefined) updateData.difficulty = data.difficulty;
+  if (data.points !== undefined) updateData.points = data.points;
+  if (data.code_snippet !== undefined) updateData.code_snippet = data.code_snippet;
+  if (data.blanks !== undefined) updateData.blanks = data.blanks;
+  if (data.expected_output !== undefined) updateData.expected_output = data.expected_output;
+  if (data.output_tips !== undefined) updateData.output_tips = data.output_tips;
+  if (data.essay_context !== undefined) updateData.essay_context = data.essay_context;
+  if (data.essay_requirements !== undefined) updateData.essay_requirements = data.essay_requirements;
+  if (data.essay_structure_guide !== undefined) updateData.essay_structure_guide = data.essay_structure_guide;
+  if (data.hints !== undefined) updateData.hints = data.hints;
+  if (data.time_estimate_minutes !== undefined) updateData.time_estimate_minutes = data.time_estimate_minutes;
+  
+  updateData.updated_at = new Date().toISOString();
+
+  // Update the question
+  const { data: updatedQuestion, error: updateError } = await supabase
+    .from('exam_questions')
+    .update(updateData)
+    .eq('id', data.id)
+    .select()
+    .single();
+
+  if (updateError) {
+    console.error('Error updating question:', updateError);
+    return { success: false, error: updateError.message };
+  }
+
+  // Get current version number
+  const { data: versions } = await supabase
+    .from('exam_question_versions')
+    .select('version_number')
+    .eq('question_id', data.id)
+    .order('version_number', { ascending: false })
+    .limit(1);
+
+  const nextVersion = versions && versions.length > 0 ? versions[0].version_number + 1 : 1;
+
+  // Create version snapshot (via database trigger or manually)
+  const { error: versionError } = await supabase
+    .from('exam_question_versions')
+    .insert({
+      question_id: data.id,
+      version_number: nextVersion,
+      question_data: updatedQuestion,
+      changed_by: user.id,
+      change_description: 'Question updated',
+    });
+
+  if (versionError) {
+    console.error('Error creating version snapshot:', versionError);
+    // Don't fail the entire operation
+  }
+
+  return { 
+    success: true, 
+    question: updatedQuestion,
+  };
+}
+
+/**
+ * Delete a question
+ */
+export async function deleteQuestion(questionId: string) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
+  // Check if user has permission (professor or admin)
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!userData || (userData.role !== 'professor' && userData.role !== 'admin')) {
+    return { success: false, error: 'Insufficient permissions' };
+  }
+
+  // Delete the question (cascade will handle versions and tokens)
+  const { error } = await supabase
+    .from('exam_questions')
+    .delete()
+    .eq('id', questionId);
+
+  if (error) {
+    console.error('Error deleting question:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
