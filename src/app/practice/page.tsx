@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { createPracticeSession, getActiveSession } from './actions';
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@/types';
 import type { PracticeSessionConfig } from '@/types/practice';
 
 const DIFFICULTY_OPTIONS = [
@@ -25,9 +27,37 @@ const TIME_LIMIT_OPTIONS = [
 
 export default function PracticePage() {
   const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [checkingSession, setCheckingSession] = useState(false);
+
+  // Route protection: only students can access practice
+  useEffect(() => {
+    const checkUserRole = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (authUser) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', authUser.id)
+          .single();
+        
+        if (userData?.role !== 'student') {
+          router.push('/');
+          return;
+        }
+        
+        setUser(userData as any);
+      } else {
+        router.push('/login');
+      }
+    };
+
+    checkUserRole();
+  }, [supabase, router]);
 
   const [config, setConfig] = useState<PracticeSessionConfig>({
     timeLimit: 30,

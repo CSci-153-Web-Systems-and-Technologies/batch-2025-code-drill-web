@@ -7,19 +7,44 @@ import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { getChallenges } from './actions';
+import { createClient } from '@/lib/supabase/client';
 import type { ChallengeWithStats } from '@/types/challenge';
 
 type TabType = 'all' | 'active' | 'upcoming' | 'completed';
 
 export default function ChallengesPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [challenges, setChallenges] = useState<ChallengeWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('active');
 
   useEffect(() => {
-    loadChallenges();
-  }, [activeTab]);
+    // Route protection: only students can access challenges
+    const checkUserRole = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (authUser) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', authUser.id)
+          .single();
+        
+        if (userData?.role !== 'student') {
+          router.push('/');
+          return;
+        }
+      } else {
+        router.push('/login');
+        return;
+      }
+
+      loadChallenges();
+    };
+
+    checkUserRole();
+  }, [activeTab, supabase, router]);
 
   const loadChallenges = async () => {
     setLoading(true);
