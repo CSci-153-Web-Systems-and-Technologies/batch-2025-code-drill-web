@@ -55,7 +55,7 @@ export default function Header() {
     { name: 'Problems', href: '/problems', icon: 'code', roles: ['student'] },
     { name: 'Practice', href: '/practice', icon: 'play', roles: ['student'] },
     { name: 'Challenges', href: '/challenges', icon: 'trophy', roles: ['student'] },
-    { name: 'Professor Exams', href: '/professor-exams', icon: 'exam', roles: ['professor', 'admin'] },
+    { name: 'Professor Exams', href: '/professor-exams', icon: 'exam', roles: ['student'] },
     { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy', roles: ['student', 'professor', 'admin'] },
     { name: 'Community', href: '/community', icon: 'users', roles: ['student', 'professor', 'admin'] },
   ];
