@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import TemplatesTab from './TemplatesTab';
+import QuestionsTab from './QuestionsTab';
 
 interface Course {
   id: string;
@@ -81,17 +82,6 @@ export default function CourseManagementClient({ course }: Props) {
 }
 
 // Placeholder components for tabs
-function QuestionsTab({ courseId }: { courseId: string }) {
-  return (
-    <Card>
-      <div className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Questions</h2>
-        <p className="text-gray-600">Question management will be implemented here.</p>
-      </div>
-    </Card>
-  );
-}
-
 function StudentsTab({ courseId }: { courseId: string }) {
   return (
     <Card>
