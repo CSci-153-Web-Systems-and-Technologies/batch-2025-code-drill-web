@@ -70,6 +70,30 @@ export default function TemplatesTab({ courseId }: Props) {
     });
   };
 
+  const handleCloneTemplate = async (templateId: string) => {
+    if (!confirm('Clone this template to the current course?')) return;
+    
+    startTransition(async () => {
+      try {
+        const response = await fetch('/api/admin/templates/clone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            template_id: templateId,
+            target_course_id: courseId,
+          }),
+        });
+
+        if (response.ok) {
+          alert('Template cloned successfully!');
+          fetchTemplates();
+        }
+      } catch (error) {
+        console.error('Error cloning template:', error);
+      }
+    });
+  };
+
   if (loading) {
     return (
       <Card>
@@ -105,7 +129,7 @@ export default function TemplatesTab({ courseId }: Props) {
                 {template.description && (
                   <p className="text-gray-600 text-sm mb-4">{template.description}</p>
                 )}
-                <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-3 gap-4 text-sm mb-4">
                   <div>
                     <span className="text-gray-500">Type:</span>
                     <p className="font-medium capitalize">{template.exam_type}</p>
@@ -119,6 +143,12 @@ export default function TemplatesTab({ courseId }: Props) {
                     <p className="font-medium">{template.total_points}</p>
                   </div>
                 </div>
+                <Button
+                  onClick={() => handleCloneTemplate(template.id)}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  Clone Template
+                </Button>
               </div>
             </Card>
           ))}
