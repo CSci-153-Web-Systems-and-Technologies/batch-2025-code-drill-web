@@ -74,6 +74,30 @@ export default function QuestionsTab({ courseId }: Props) {
     });
   };
 
+  const handleCloneQuestion = async (questionId: string) => {
+    if (!confirm('Clone this question to the current course?')) return;
+    
+    startTransition(async () => {
+      try {
+        const response = await fetch('/api/admin/questions/clone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question_id: questionId,
+            target_course_id: courseId,
+          }),
+        });
+
+        if (response.ok) {
+          alert('Question cloned successfully!');
+          fetchQuestions();
+        }
+      } catch (error) {
+        console.error('Error cloning question:', error);
+      }
+    });
+  };
+
   const filteredQuestions = questions.filter(q => {
     const matchesSearch = q.question_text.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || q.question_type === filterType;
@@ -141,9 +165,17 @@ export default function QuestionsTab({ courseId }: Props) {
                       {question.question_text}
                     </p>
                   </div>
-                  <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                    {question.points} pts
-                  </span>
+                  <div className="flex items-center gap-2 ml-4">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                      {question.points} pts
+                    </span>
+                    <button
+                      onClick={() => handleCloneQuestion(question.id)}
+                      className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs"
+                    >
+                      Clone
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-4 text-sm">
