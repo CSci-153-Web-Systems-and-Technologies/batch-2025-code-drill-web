@@ -1,0 +1,36 @@
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import CoursesListClient from './CoursesListClient';
+
+export default async function CoursesPage() {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    redirect('/login');
+  }
+
+  const { data: userRecord } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!userRecord || (userRecord.role !== 'professor' && userRecord.role !== 'admin')) {
+    redirect('/');
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">My Courses</h1>
+          <p className="mt-2 text-gray-600">Manage your courses, templates, and questions</p>
+        </div>
+        
+        <CoursesListClient />
+      </div>
+    </div>
+  );
+}
