@@ -143,12 +143,20 @@ export default function TemplatesTab({ courseId }: Props) {
                     <p className="font-medium">{template.total_points}</p>
                   </div>
                 </div>
-                <Button
-                  onClick={() => handleCloneTemplate(template.id)}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  Clone Template
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => window.open(`/admin/exam-preview/${template.id}`, '_blank')}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    onClick={() => handleCloneTemplate(template.id)}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  >
+                    Clone
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
