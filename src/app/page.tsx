@@ -9,6 +9,8 @@ import { StreakStats } from '@/components/streaks/StreakStats';
 import { StreakCalendar } from '@/components/streaks/StreakCalendar';
 import ActiveChallenges from '@/components/challenges/ActiveChallenges';
 import { getCurrentUserWithRole } from '@/lib/auth-roles';
+import { getProfessorDashboardStats } from '@/lib/professor-dashboard';
+import { DashboardQuickActions } from '@/components/admin/DashboardQuickActions';
 import { redirect } from 'next/navigation';
 
 export default async function Home() {
@@ -110,6 +112,8 @@ export default async function Home() {
   }
 
   // Professor/Admin Dashboard
+  const stats = await getProfessorDashboardStats();
+
   return (
     <Container className="py-8">
       {/* Header Section */}
@@ -132,7 +136,7 @@ export default async function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
           }
-          value="--"
+          value={stats.courseCount.toString()}
           label="Active Courses"
           color="bg-blue-50"
         />
@@ -142,7 +146,7 @@ export default async function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           }
-          value="--"
+          value={stats.templateCount.toString()}
           label="Exam Templates"
           color="bg-purple-50"
         />
@@ -152,41 +156,66 @@ export default async function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           }
-          value="--"
+          value={stats.submissionCount.toString()}
           label="Student Submissions"
           color="bg-green-50"
         />
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button className="w-full">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Create New Course
-          </Button>
-          <Button className="w-full" variant="outline">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Create Exam Template
-          </Button>
-          <Button className="w-full" variant="outline">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            View Submissions
-          </Button>
-        </div>
-      </div>
+      <DashboardQuickActions />
 
-      {/* Placeholder for Recent Activity */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
-        <p className="text-gray-600">No recent activity to display</p>
+      {/* Navigation Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <a
+          href="/admin/submissions"
+          className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
+        >
+          <svg className="w-8 h-8 text-blue-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <h3 className="font-semibold text-gray-900 mb-1">Submissions</h3>
+          <p className="text-sm text-gray-600">Review & grade</p>
+        </a>
+        <a
+          href="/admin/analytics"
+          className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
+        >
+          <svg className="w-8 h-8 text-purple-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <h3 className="font-semibold text-gray-900 mb-1">Analytics</h3>
+          <p className="text-sm text-gray-600">Student performance</p>
+        </a>
+        <a
+          href="/admin/roster"
+          className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
+        >
+          <svg className="w-8 h-8 text-green-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <h3 className="font-semibold text-gray-900 mb-1">Roster</h3>
+          <p className="text-sm text-gray-600">Class management</p>
+        </a>
+        <a
+          href="/admin/announcements"
+          className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
+        >
+          <svg className="w-8 h-8 text-orange-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+          </svg>
+          <h3 className="font-semibold text-gray-900 mb-1">Announcements</h3>
+          <p className="text-sm text-gray-600">Post updates</p>
+        </a>
+        <a
+          href="/admin/reports"
+          className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
+        >
+          <svg className="w-8 h-8 text-indigo-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 className="font-semibold text-gray-900 mb-1">Reports</h3>
+          <p className="text-sm text-gray-600">Item analysis</p>
+        </a>
       </div>
     </Container>
   );
