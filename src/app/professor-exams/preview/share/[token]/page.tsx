@@ -211,7 +211,7 @@ export default async function SharedPreviewPage({
                           <span className="text-gray-400">Key Concepts:</span>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {question.essay_requirements.key_concepts.map(
-                              (concept, index) => (
+                              (concept: string, index: number) => (
                                 <span
                                   key={index}
                                   className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-sm"
