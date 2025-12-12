@@ -112,7 +112,7 @@ export default async function SharedPreviewPage({
                     {Object.entries(question.blanks).map(([key, value]) => (
                       <div key={key} className="mb-2">
                         <span className="text-blue-400">Blank {key}:</span>{' '}
-                        <span className="text-white font-mono">{value}</span>
+                        <span className="text-white font-mono">{String(value)}</span>
                       </div>
                     ))}
                   </div>
@@ -125,7 +125,7 @@ export default async function SharedPreviewPage({
                     Hints:
                   </h3>
                   <ul className="list-disc list-inside text-gray-300 space-y-1">
-                    {question.hints.map((hint, index) => (
+                  {question.hints.map((hint: string, index: number) => (
                       <li key={index}>{hint}</li>
                     ))}
                   </ul>
@@ -169,7 +169,7 @@ export default async function SharedPreviewPage({
                     Output Tips:
                   </h3>
                   <ul className="list-disc list-inside text-gray-300 space-y-1">
-                    {question.output_tips.map((tip, index) => (
+                    {question.output_tips.map((tip: string, index: number) => (
                       <li key={index}>{tip}</li>
                     ))}
                   </ul>
@@ -211,7 +211,7 @@ export default async function SharedPreviewPage({
                           <span className="text-gray-400">Key Concepts:</span>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {question.essay_requirements.key_concepts.map(
-                              (concept, index) => (
+                              (concept: string, index: number) => (
                                 <span
                                   key={index}
                                   className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-sm"
