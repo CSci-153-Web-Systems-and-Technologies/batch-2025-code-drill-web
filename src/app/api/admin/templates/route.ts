@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createTemplateSchema } from '@/lib/validations/template-schemas';
 
 async function requireProfessorOrAdmin() {
   const supabase = await createClient();
@@ -11,14 +12,14 @@ async function requireProfessorOrAdmin() {
 
   const { data: userRecord } = await supabase
     .from('users')
-    .select('role, name')
+    .select('role')
     .eq('id', user.id)
     .single();
 
   return { supabase, user, userRecord } as const;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const { supabase, user, userRecord } = await requireProfessorOrAdmin();
 
   if (!user) {
@@ -29,16 +30,25 @@ export async function GET() {
     return NextResponse.json({ error: 'Professor or admin role required' }, { status: 403 });
   }
 
-  const { data, error } = await supabase
-    .from('professor_courses')
-    .select('id, course_code, name')
-    .order('course_code');
+  const { searchParams } = new URL(request.url);
+  const courseId = searchParams.get('course_id');
+
+  let query = supabase
+    .from('exam_templates')
+    .select('id, course_id, exam_type, title, description, duration_minutes, question_count, total_points, instructions, created_at')
+    .order('created_at', { ascending: false });
+
+  if (courseId) {
+    query = query.eq('course_id', courseId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ courses: data || [] });
+  return NextResponse.json({ templates: data || [] });
 }
 
 export async function POST(request: Request) {
@@ -52,24 +62,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Professor or admin role required' }, { status: 403 });
   }
 
-  const body = await request.json();
-  const { course_code, name, description, semester, exam_style, difficulty } = body;
+  const body = await request.json().catch(() => null);
+  const parsed = createTemplateSchema.safeParse(body);
 
-  if (!course_code || !name) {
-    return NextResponse.json({ error: 'course_code and name are required' }, { status: 400 });
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message || 'Invalid payload';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  const payload = parsed.data;
+
   const { data, error } = await supabase
-    .from('professor_courses')
+    .from('exam_templates')
     .insert({
-      course_code,
-      name,
-      description: description ?? null,
-      professor_name: userRecord?.name || 'Professor',
-      semester: semester ?? 'TBD',
-      student_count: 0,
-      exam_style: exam_style ?? 'balanced',
-      difficulty: difficulty ?? 'Medium',
+      course_id: payload.course_id,
+      exam_type: payload.exam_type,
+      title: payload.title,
+      description: payload.description ?? null,
+      duration_minutes: payload.duration_minutes,
+      question_count: payload.question_count ?? 0,
+      total_points: payload.total_points,
+      instructions: payload.instructions ?? null,
     })
     .select()
     .single();
@@ -78,5 +91,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ course: data }, { status: 201 });
+  return NextResponse.json({ template: data }, { status: 201 });
 }
