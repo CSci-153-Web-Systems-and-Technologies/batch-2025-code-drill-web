@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 
 interface Template {
   id: string;
