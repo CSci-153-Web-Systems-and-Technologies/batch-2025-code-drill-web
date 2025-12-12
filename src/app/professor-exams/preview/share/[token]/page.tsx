@@ -169,7 +169,7 @@ export default async function SharedPreviewPage({
                     Output Tips:
                   </h3>
                   <ul className="list-disc list-inside text-gray-300 space-y-1">
-                    {question.output_tips.map((tip, index) => (
+                    {question.output_tips.map((tip: string, index: number) => (
                       <li key={index}>{tip}</li>
                     ))}
                   </ul>
