@@ -32,12 +32,36 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const courseId = searchParams.get('course_id');
 
-  // Get student performance analytics
+  // First, get all students to ensure we only count/show students
+  const { data: allStudents, error: studentsError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('role', 'student');
+
+  if (studentsError) {
+    return NextResponse.json({ error: studentsError.message }, { status: 500 });
+  }
+
+  const studentIds = allStudents?.map(s => s.id) || [];
+
+  if (studentIds.length === 0) {
+    return NextResponse.json({
+      analytics: {
+        totalStudents: 0,
+        avgAccuracy: 0,
+        totalSubmissions: 0,
+        completionRate: 0,
+        students: [],
+      }
+    });
+  }
+
+  // Get student performance analytics - only for students
   let query = supabase
     .from('user_exam_progress')
     .select(`
       *,
-      users (id, name, email),
+      users!inner (id, name, email, role),
       exam_templates (
         id,
         title,
@@ -45,6 +69,8 @@ export async function GET(request: Request) {
         professor_courses (course_code, name)
       )
     `)
+    .in('user_id', studentIds)
+    .eq('users.role', 'student')
     .order('accuracy', { ascending: false });
 
   if (courseId) {
