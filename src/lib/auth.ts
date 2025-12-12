@@ -30,6 +30,7 @@ export async function getCurrentUser(): Promise<User | null> {
     id: userData.id,
     name: userData.name,
     email: userData.email,
+    role: userData.role,
     totalPoints: userData.total_points,
     problemsSolved: userData.problems_solved,
     currentStreak: userData.current_streak,
