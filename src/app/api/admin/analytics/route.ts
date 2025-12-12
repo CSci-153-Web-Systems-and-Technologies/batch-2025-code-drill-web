@@ -32,19 +32,18 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const courseId = searchParams.get('course_id');
 
-  // First, get all students to ensure we only count/show students
+  // First, get all students
   const { data: allStudents, error: studentsError } = await supabase
     .from('users')
-    .select('id')
-    .eq('role', 'student');
+    .select('id, name, email')
+    .eq('role', 'student')
+    .order('name');
 
   if (studentsError) {
     return NextResponse.json({ error: studentsError.message }, { status: 500 });
   }
 
-  const studentIds = allStudents?.map(s => s.id) || [];
-
-  if (studentIds.length === 0) {
+  if (!allStudents || allStudents.length === 0) {
     return NextResponse.json({
       analytics: {
         totalStudents: 0,
@@ -56,12 +55,11 @@ export async function GET(request: Request) {
     });
   }
 
-  // Get student performance analytics - only for students
+  // Get exam progress for all students
   let query = supabase
     .from('user_exam_progress')
     .select(`
       *,
-      users!inner (id, name, email, role),
       exam_templates (
         id,
         title,
@@ -69,37 +67,54 @@ export async function GET(request: Request) {
         professor_courses (course_code, name)
       )
     `)
-    .in('user_id', studentIds)
-    .eq('users.role', 'student')
+    .in('user_id', allStudents.map(s => s.id))
     .order('accuracy', { ascending: false });
 
   if (courseId) {
     query = query.eq('course_id', courseId);
   }
 
-  const { data: progressData, error } = await query.limit(100);
+  const { data: progressData, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Merge student data with progress data
+  const studentsWithProgress = allStudents.map(student => {
+    const studentProgress = progressData?.filter(p => p.user_id === student.id) || [];
+    
+    const avgAccuracy = studentProgress.length > 0
+      ? studentProgress.reduce((sum, p) => sum + p.accuracy, 0) / studentProgress.length
+      : 0;
+    
+    const totalPoints = studentProgress.reduce((sum, p) => sum + (p.total_points || 0), 0);
+    
+    return {
+      user_id: student.id,
+      users: { id: student.id, name: student.name, email: student.email },
+      accuracy: avgAccuracy,
+      total_points: totalPoints,
+      exam_count: studentProgress.length,
+    };
+  });
+
   // Calculate aggregate stats
-  const totalStudents = new Set(progressData?.map(p => p.user_id) || []).size;
+  const totalSubmissions = progressData?.length || 0;
   const avgAccuracy = progressData && progressData.length > 0
     ? progressData.reduce((sum, p) => sum + p.accuracy, 0) / progressData.length
     : 0;
-  const totalSubmissions = progressData?.length || 0;
   const completionRate = progressData && progressData.length > 0
     ? (progressData.filter(p => p.status === 'completed').length / totalSubmissions) * 100
     : 0;
 
   return NextResponse.json({
     analytics: {
-      totalStudents,
+      totalStudents: allStudents.length,
       avgAccuracy: Math.round(avgAccuracy * 100) / 100,
       totalSubmissions,
       completionRate: Math.round(completionRate * 100) / 100,
-      students: progressData || [],
+      students: studentsWithProgress,
     }
   });
 }
