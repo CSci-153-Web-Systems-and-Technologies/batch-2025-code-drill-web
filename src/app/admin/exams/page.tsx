@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { checkProfessorRole } from '@/lib/auth-roles';
+import { checkAdminRole } from '@/lib/auth-roles';
 import { getCourses } from '@/app/professor-exams/actions';
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
@@ -7,10 +7,10 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 
 export default async function AdminExamsPage() {
-  // Check professor role
-  const user = await checkProfessorRole();
+  // Route protection: only admins can access admin panel
+  const user = await checkAdminRole();
   if (!user) {
-    redirect('/professor-exams');
+    redirect('/');
   }
 
   // Get all courses
