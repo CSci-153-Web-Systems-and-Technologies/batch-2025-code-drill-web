@@ -943,7 +943,7 @@ export async function getUserPreviewTokens(questionId?: string) {
     query = query.eq('question_id', questionId);
   }
 
-  const { data, error } = await supabase;
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching preview tokens:', error);
