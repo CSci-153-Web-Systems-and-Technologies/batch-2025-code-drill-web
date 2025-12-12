@@ -67,7 +67,7 @@ export default function Header() {
   // Add Admin link for professors/admins
   const isProfessorOrAdmin = user?.role === 'professor' || user?.role === 'admin';
   const adminNavItems = isProfessorOrAdmin 
-    ? [{ name: 'Admin', href: '/admin/exams', icon: 'admin', roles: ['professor', 'admin'] }]
+    ? [{ name: 'Admin', href: '/admin/courses', icon: 'admin', roles: ['professor', 'admin'] }]
     : [];
   
   const allNavItems = [...filteredNavItems, ...adminNavItems];
