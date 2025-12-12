@@ -125,7 +125,7 @@ export default async function SharedPreviewPage({
                     Hints:
                   </h3>
                   <ul className="list-disc list-inside text-gray-300 space-y-1">
-                    {question.hints.map((hint, index) => (
+                  {question.hints.map((hint: string, index: number) => (
                       <li key={index}>{hint}</li>
                     ))}
                   </ul>
