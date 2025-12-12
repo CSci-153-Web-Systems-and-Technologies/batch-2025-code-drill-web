@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { checkProfessorRole } from '@/lib/auth-roles';
+import { getCurrentUserWithRole } from '@/lib/auth-roles';
 import { getCourses } from './actions';
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfessorExamsPage() {
-  // Route protection: only professors/admins can access professor exams
-  const user = await checkProfessorRole();
-  if (!user) {
+  // Route protection: only students can access professor exams
+  const user = await getCurrentUserWithRole();
+  if (!user || user.role !== 'student') {
     redirect('/');
   }
 
