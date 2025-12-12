@@ -1,6 +1,0 @@
-{
-  "/admin/exams/courses/[courseId]/questions/page": "app/admin/exams/courses/[courseId]/questions/page.js",
-  "/admin/exams/questions/[questionId]/edit/page": "app/admin/exams/questions/[questionId]/edit/page.js",
-  "/admin/exams/questions/new/page": "app/admin/exams/questions/new/page.js",
-  "/admin/exams/page": "app/admin/exams/page.js"
-}
