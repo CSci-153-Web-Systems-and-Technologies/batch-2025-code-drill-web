@@ -51,21 +51,26 @@ export default function Header() {
   };
 
   const navItems = [
-    { name: 'Dashboard', href: '/', icon: 'dashboard' },
-    { name: 'Problems', href: '/problems', icon: 'code' },
-    { name: 'Practice', href: '/practice', icon: 'play' },
-    { name: 'Challenges', href: '/challenges', icon: 'trophy' },
-    { name: 'Professor Exams', href: '/professor-exams', icon: 'exam' },
-    { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy' },
-    { name: 'Community', href: '/community', icon: 'users' },
+    { name: 'Dashboard', href: '/', icon: 'dashboard', roles: ['student', 'professor', 'admin'] },
+    { name: 'Problems', href: '/problems', icon: 'code', roles: ['student'] },
+    { name: 'Practice', href: '/practice', icon: 'play', roles: ['student'] },
+    { name: 'Challenges', href: '/challenges', icon: 'trophy', roles: ['student'] },
+    { name: 'Professor Exams', href: '/professor-exams', icon: 'exam', roles: ['professor', 'admin'] },
+    { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy', roles: ['student', 'professor', 'admin'] },
+    { name: 'Community', href: '/community', icon: 'users', roles: ['student', 'professor', 'admin'] },
   ];
+
+  // Filter navigation items based on user role
+  const userRole = user?.role || 'student';
+  const filteredNavItems = navItems.filter(item => item.roles.includes(userRole));
 
   // Add Admin link for professors/admins
   const isProfessorOrAdmin = user?.role === 'professor' || user?.role === 'admin';
   const adminNavItems = isProfessorOrAdmin 
-    ? [{ name: 'Admin', href: '/admin/exams', icon: 'admin' }]
+    ? [{ name: 'Admin', href: '/admin/exams', icon: 'admin', roles: ['professor', 'admin'] }]
     : [];
-  const allNavItems = [...navItems, ...adminNavItems];
+  
+  const allNavItems = [...filteredNavItems, ...adminNavItems];
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -205,7 +210,7 @@ export default function Header() {
         {/* Mobile Navigation */}
         <div className="md:hidden border-t border-gray-200 py-3 hidden">
           <div className="space-y-1">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
