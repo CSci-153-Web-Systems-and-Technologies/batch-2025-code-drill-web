@@ -112,7 +112,7 @@ export default async function SharedPreviewPage({
                     {Object.entries(question.blanks).map(([key, value]) => (
                       <div key={key} className="mb-2">
                         <span className="text-blue-400">Blank {key}:</span>{' '}
-                        <span className="text-white font-mono">{value}</span>
+                        <span className="text-white font-mono">{String(value)}</span>
                       </div>
                     ))}
                   </div>
