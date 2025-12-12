@@ -10,6 +10,7 @@ import { StreakCalendar } from '@/components/streaks/StreakCalendar';
 import ActiveChallenges from '@/components/challenges/ActiveChallenges';
 import { getCurrentUserWithRole } from '@/lib/auth-roles';
 import { getProfessorDashboardStats } from '@/lib/professor-dashboard';
+import { DashboardQuickActions } from '@/components/admin/DashboardQuickActions';
 import { redirect } from 'next/navigation';
 
 export default async function Home() {
@@ -161,30 +162,7 @@ export default async function Home() {
         />
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button className="w-full">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Create New Course
-          </Button>
-          <Button className="w-full" variant="outline">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Create Exam Template
-          </Button>
-          <Button className="w-full" variant="outline">
-            <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            View Submissions
-          </Button>
-        </div>
-      </div>
+      <DashboardQuickActions />
 
       {/* Placeholder for Recent Activity */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
