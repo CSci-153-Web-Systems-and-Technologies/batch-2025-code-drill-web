@@ -42,7 +42,13 @@ BEGIN
   END IF;
 
   -- Disable the versioning trigger temporarily during seed to avoid auth.uid() issues
-  ALTER TABLE exam_questions DISABLE TRIGGER create_question_version_trigger;
+  IF EXISTS (
+    SELECT 1 FROM pg_trigger 
+    WHERE tgname = 'create_question_version_trigger' 
+    AND tgrelid = 'exam_questions'::regclass
+  ) THEN
+    ALTER TABLE exam_questions DISABLE TRIGGER create_question_version_trigger;
+  END IF;
 
   -- ========================================================================
   -- LOOPS - CODE ANALYSIS (3 questions)
@@ -590,7 +596,13 @@ BEGIN
    5, ARRAY['pointers', 'void-pointer', 'generic'], true, NOW());
 
   -- Re-enable the versioning trigger
-  ALTER TABLE exam_questions ENABLE TRIGGER create_question_version_trigger;
+  IF EXISTS (
+    SELECT 1 FROM pg_trigger 
+    WHERE tgname = 'create_question_version_trigger' 
+    AND tgrelid = 'exam_questions'::regclass
+  ) THEN
+    ALTER TABLE exam_questions ENABLE TRIGGER create_question_version_trigger;
+  END IF;
 
   RAISE NOTICE '75 questions successfully seeded for CS 101 (Fundamentals of Programming)';
   RAISE NOTICE 'Topics: loops, arrays, functions, recursion, pointers';
