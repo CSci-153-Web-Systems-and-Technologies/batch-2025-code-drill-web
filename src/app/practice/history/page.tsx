@@ -133,12 +133,7 @@ export default function PracticeHistoryPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold">
-                          {session.difficulty ? (
-                            <span className="capitalize">{session.difficulty} • </span>
-                          ) : (
-                            'Mixed • '
-                          )}
-                          {session.time_limit} minutes
+                          Practice Session • {session.time_limit} minutes
                         </h3>
                         <span
                           className={`text-xs px-2 py-1 rounded ${

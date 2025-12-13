@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import CodeWithBlanks from '@/components/practice/CodeWithBlanks';
 import { createClient } from '@/lib/supabase/client';
 import { updateSessionStatus } from '../actions';
 import { recordQuestionAnswer } from '@/lib/question-selection';
@@ -307,26 +306,25 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
             {/* Question Type Specific Rendering */}
             {question.question_type_category === 'code_analysis' && (
               <div className="space-y-4">
-                {question.code_snippet && question.blanks && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fill in the blanks in the code:
-                    </label>
-                    <CodeWithBlanks
-                      codeSnippet={question.code_snippet}
-                      blanks={question.blanks}
-                      userAnswers={
-                        typeof answers[question.id] === 'object' 
-                          ? answers[question.id] as Record<string, string>
-                          : {}
-                      }
-                      onChange={(blankAnswers) => {
-                        handleAnswerChange(question.id, blankAnswers);
-                      }}
-                      showCorrectness={false}
-                    />
+                {question.code_snippet && (
+                  <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                    <pre className="text-sm">
+                      <code>{question.code_snippet}</code>
+                    </pre>
                   </div>
                 )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Answer
+                  </label>
+                  <textarea
+                    value={answers[question.id] || ''}
+                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                    rows={6}
+                    placeholder="Enter your code or analysis..."
+                  />
+                </div>
               </div>
             )}
 
@@ -339,46 +337,17 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
                     </pre>
                   </div>
                 )}
-                
-                {/* Output Format Guide */}
-                <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
-                  <h4 className="font-medium text-purple-900 mb-2 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Output Format Guide
-                  </h4>
-                  <div className="text-sm text-purple-800 space-y-2">
-                    <p><strong>Your answer should:</strong></p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
-                      <li>Include the exact output the program produces</li>
-                      <li>Preserve all spaces, punctuation, and line breaks</li>
-                      <li>Use separate lines for each output line</li>
-                      <li>Include quotation marks or special characters as they appear</li>
-                    </ul>
-                    <div className="mt-3 p-3 bg-white rounded border border-purple-200">
-                      <p className="font-medium mb-1">Example format:</p>
-                      <pre className="font-mono text-xs text-purple-900">5 4 3 2 1</pre>
-                      <p className="text-xs mt-1 text-purple-600">or for multi-line output:</p>
-                      <pre className="font-mono text-xs text-purple-900">Hello{'\n'}World{'\n'}!</pre>
-                    </div>
-                  </div>
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Output Answer
+                    What is the output?
                   </label>
                   <textarea
                     value={answers[question.id] || ''}
                     onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                     rows={4}
-                    placeholder="Enter the exact output here..."
+                    placeholder="Enter the expected output..."
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    💡 Be precise - include all spaces and line breaks exactly as they appear
-                  </p>
                 </div>
                 {question.output_tips && (
                   <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
@@ -403,8 +372,8 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
                       {typeof question.essay_requirements === 'object' ? (
                         <>
                           {question.essay_requirements.word_count && (
-                            <p className="font-semibold text-blue-800">
-                              <strong>Word Count:</strong> {question.essay_requirements.word_count[0]} - {question.essay_requirements.word_count[1]} words (strictly enforced)
+                            <p>
+                              <strong>Word Count:</strong> {question.essay_requirements.word_count[0]} - {question.essay_requirements.word_count[1]} words
                             </p>
                           )}
                           {question.essay_requirements.key_concepts && question.essay_requirements.key_concepts.length > 0 && (
@@ -425,64 +394,16 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
                   </div>
                 )}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Your Essay
-                    </label>
-                    {(() => {
-                      const essayText = (answers[question.id] || '') as string;
-                      const wordCount = essayText.trim().split(/\s+/).filter(w => w.length > 0).length;
-                      const requirements = question.essay_requirements;
-                      let minWords = 0;
-                      let maxWords = Infinity;
-                      
-                      if (typeof requirements === 'object' && requirements !== null && requirements.word_count) {
-                        minWords = requirements.word_count[0];
-                        maxWords = requirements.word_count[1];
-                      }
-                      
-                      const isUnderMin = wordCount < minWords && wordCount > 0;
-                      const isOverMax = wordCount > maxWords;
-                      const isValid = wordCount >= minWords && wordCount <= maxWords;
-                      
-                      return (
-                        <span className={`text-sm font-medium ${
-                          isValid ? 'text-green-600' : 
-                          isOverMax || isUnderMin ? 'text-red-600' : 
-                          'text-gray-500'
-                        }`}>
-                          {wordCount} / {minWords}-{maxWords} words
-                          {isOverMax && ' (exceeds limit!)'}
-                          {isUnderMin && ' (too short)'}
-                          {isValid && ' ✓'}
-                        </span>
-                      );
-                    })()}
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Essay
+                  </label>
                   <textarea
                     value={answers[question.id] || ''}
-                    onChange={(e) => {
-                      const text = e.target.value;
-                      const wordCount = text.trim().split(/\s+/).filter(w => w.length > 0).length;
-                      const requirements = question.essay_requirements;
-                      let maxWords = Infinity;
-                      
-                      if (typeof requirements === 'object' && requirements !== null && requirements.word_count) {
-                        maxWords = requirements.word_count[1];
-                      }
-                      
-                      // Enforce max word limit strictly
-                      if (wordCount <= maxWords || text.length < (answers[question.id] as string || '').length) {
-                        handleAnswerChange(question.id, text);
-                      }
-                    }}
+                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={12}
                     placeholder="Write your essay here..."
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    💡 The word limit is strictly enforced - you cannot exceed the maximum word count
-                  </p>
                 </div>
                 {question.essay_structure_guide && (
                   <div className="text-sm text-gray-600 bg-purple-50 p-3 rounded">

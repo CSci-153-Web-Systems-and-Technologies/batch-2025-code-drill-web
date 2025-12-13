@@ -1,7 +1,8 @@
+import type { QuestionTypeCategory } from './professor-exam';
+
 export interface PracticeSession {
   id: string;
   user_id: string;
-  difficulty: 'easy' | 'medium' | 'hard' | null;
   category: string | null;
   time_limit: number;
   started_at: string;
@@ -12,6 +13,11 @@ export interface PracticeSession {
   status: 'active' | 'completed' | 'abandoned';
   created_at: string;
   updated_at: string;
+  // New fields for exam-based practice
+  question_source?: 'coding' | 'exam';
+  course_id?: string | null;
+  selected_tags?: string[] | null;
+  selected_question_types?: QuestionTypeCategory[] | null;
 }
 
 export interface SessionProblem {
@@ -29,6 +35,10 @@ export interface PracticeSessionConfig {
   difficulty?: 'easy' | 'medium' | 'hard';
   category?: string;
   timeLimit: number; // in minutes
+  // New fields for exam-based practice
+  courseId?: string;
+  tags?: string[];
+  questionTypes?: QuestionTypeCategory[];
 }
 
 export interface ActiveSessionData extends PracticeSession {
@@ -41,3 +51,4 @@ export interface ActiveSessionData extends PracticeSession {
     };
   })[];
 }
+
