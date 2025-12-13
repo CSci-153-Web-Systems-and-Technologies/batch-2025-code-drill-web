@@ -111,6 +111,9 @@ BEGIN
     WHERE u.leaderboard_visible = true
       AND u.role = 'student'::user_role
   ),
+  total_count AS (
+    SELECT COUNT(*) as total_users FROM ranked_users
+  ),
   user_badge_list AS (
     SELECT 
       ub.user_id,
@@ -129,13 +132,14 @@ BEGIN
   )
   SELECT 
     ru.user_rank,
-    COUNT(*) OVER () as total_users,
+    tc.total_users,
     ru.total_points,
     ru.problems_solved,
     ru.avg_score,
     ru.current_streak,
     COALESCE(ubl.user_badges, '[]'::jsonb) as badges
   FROM ranked_users ru
+  CROSS JOIN total_count tc
   LEFT JOIN user_badge_list ubl ON ru.id = ubl.user_id
   WHERE ru.id = p_user_id;
 END;
