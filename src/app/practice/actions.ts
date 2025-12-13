@@ -2,7 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { selectMixedQuestions, recordQuestionSeen } from '@/lib/question-selection';
 import type { PracticeSessionConfig, PracticeSession, ActiveSessionData } from '@/types/practice';
+import type { QuestionTypeCategory } from '@/types/professor-exam';
 
 export async function createPracticeSession(config: PracticeSessionConfig) {
   const supabase = await createClient();
@@ -15,60 +17,141 @@ export async function createPracticeSession(config: PracticeSessionConfig) {
     return { error: 'Unauthorized' };
   }
 
-  // Create the practice session
-  const { data: session, error: sessionError } = await supabase
-    .from('practice_sessions')
-    .insert({
-      user_id: user.id,
-      difficulty: config.difficulty || null,
-      category: config.category || null,
-      time_limit: config.timeLimit,
-      status: 'active',
-    })
-    .select()
-    .single();
+  // Determine question source: exam-based if courseId is provided
+  const questionSource = config.courseId ? 'exam' : 'coding';
+  
+  if (questionSource === 'exam') {
+    // Exam-based practice mode
+    
+    // Validate course ID
+    if (!config.courseId) {
+      return { error: 'Course ID is required for exam-based practice' };
+    }
+    
+    // Determine question types to select
+    const questionTypes: QuestionTypeCategory[] = 
+      config.questionTypes && config.questionTypes.length > 0
+        ? config.questionTypes
+        : ['code_analysis', 'output_tracing', 'essay', 'multiple_choice', 'true_false'];
+    
+    // Select questions using smart selection algorithm
+    const selectedQuestions = await selectMixedQuestions(
+      user.id,
+      {
+        courseId: config.courseId,
+        tags: config.tags,
+      },
+      questionTypes
+    );
+    
+    if (selectedQuestions.length === 0) {
+      return { error: 'No questions available with current filters. Try adjusting your selection.' };
+    }
+    
+    // Create the practice session
+    const { data: session, error: sessionError } = await supabase
+      .from('practice_sessions')
+      .insert({
+        user_id: user.id,
+        difficulty: null, // No difficulty in exam-based practice
+        category: null,
+        time_limit: config.timeLimit,
+        status: 'active',
+        question_source: 'exam',
+        course_id: config.courseId,
+        selected_tags: config.tags || null,
+        selected_question_types: questionTypes,
+      })
+      .select()
+      .single();
 
-  if (sessionError || !session) {
-    console.error('Error creating practice session:', sessionError);
-    return { error: sessionError?.message || 'Failed to create practice session' };
+    if (sessionError || !session) {
+      console.error('Error creating practice session:', sessionError);
+      return { error: sessionError?.message || 'Failed to create practice session' };
+    }
+
+    // Add questions to practice_exam_questions junction table
+    const examQuestions = selectedQuestions.map((question) => ({
+      session_id: session.id,
+      exam_question_id: question.id,
+    }));
+
+    const { error: questionsInsertError } = await supabase
+      .from('practice_exam_questions')
+      .insert(examQuestions);
+
+    if (questionsInsertError) {
+      console.error('Error adding questions to session:', questionsInsertError);
+      return { error: 'Failed to add questions to session' };
+    }
+    
+    // Record questions as seen
+    for (const question of selectedQuestions) {
+      await recordQuestionSeen(user.id, question.id);
+    }
+
+    revalidatePath('/practice');
+    return { data: session };
+    
+  } else {
+    // Coding problem practice mode (legacy)
+    
+    // Create the practice session
+    const { data: session, error: sessionError } = await supabase
+      .from('practice_sessions')
+      .insert({
+        user_id: user.id,
+        difficulty: config.difficulty || null,
+        category: config.category || null,
+        time_limit: config.timeLimit,
+        status: 'active',
+        question_source: 'coding',
+      })
+      .select()
+      .single();
+
+    if (sessionError || !session) {
+      console.error('Error creating practice session:', sessionError);
+      return { error: sessionError?.message || 'Failed to create practice session' };
+    }
+
+    // Get random problems based on filters
+    let query = supabase.from('problems').select('id');
+
+    if (config.difficulty) {
+      query = query.eq('difficulty', config.difficulty);
+    }
+
+    if (config.category) {
+      query = query.eq('category', config.category);
+    }
+
+    const { data: problems, error: problemsError } = await query.limit(10);
+
+    if (problemsError || !problems || problems.length === 0) {
+      console.error('Error fetching problems:', problemsError);
+      return { error: 'No problems found matching criteria' };
+    }
+
+    // Add problems to session
+    const sessionProblems = problems.map((problem) => ({
+      session_id: session.id,
+      problem_id: problem.id,
+      status: 'pending' as const,
+    }));
+
+    const { error: problemsInsertError } = await supabase
+      .from('session_problems')
+      .insert(sessionProblems);
+
+    if (problemsInsertError) {
+      console.error('Error adding problems to session:', problemsInsertError);
+      return { error: 'Failed to add problems to session' };
+    }
+
+    revalidatePath('/practice');
+    return { data: session };
   }
-
-  // Get random problems based on filters
-  let query = supabase.from('problems').select('id');
-
-  if (config.difficulty) {
-    query = query.eq('difficulty', config.difficulty);
-  }
-
-  if (config.category) {
-    query = query.eq('category', config.category);
-  }
-
-  const { data: problems, error: problemsError } = await query.limit(10);
-
-  if (problemsError || !problems || problems.length === 0) {
-    console.error('Error fetching problems:', problemsError);
-    return { error: 'No problems found matching criteria' };
-  }
-
-  // Add problems to session
-  const sessionProblems = problems.map((problem) => ({
-    session_id: session.id,
-    problem_id: problem.id,
-    status: 'pending' as const,
-  }));
-
-  const { error: problemsInsertError } = await supabase
-    .from('session_problems')
-    .insert(sessionProblems);
-
-  if (problemsInsertError) {
-    console.error('Error adding problems to session:', problemsInsertError);
-    return { error: 'Failed to add problems to session' };
-  }
-
-  revalidatePath('/practice');
-  return { data: session };
 }
 
 export async function getActiveSession() {
