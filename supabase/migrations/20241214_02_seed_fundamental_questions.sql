@@ -4,6 +4,32 @@
 -- Question Types: code_analysis, output_tracing, essay, multiple_choice, true_false
 -- 5 topics × 5 types × 3 questions = 75 total questions
 
+-- IMPORTANT: This migration requires 20241214_practice_mode_topics.sql to run first
+-- That migration makes template_id and question_number nullable
+
+-- Verify the schema has been updated
+DO $$
+BEGIN
+  -- Check if question_number is nullable
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'exam_questions' 
+    AND column_name = 'question_number' 
+    AND is_nullable = 'NO'
+  ) THEN
+    RAISE EXCEPTION 'Migration dependency not met: question_number is still NOT NULL. Please run 20241214_practice_mode_topics.sql first.';
+  END IF;
+  
+  -- Check if course_id column exists
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'exam_questions' 
+    AND column_name = 'course_id'
+  ) THEN
+    RAISE EXCEPTION 'Migration dependency not met: course_id column does not exist. Please run 20241214_practice_mode_topics.sql first.';
+  END IF;
+END$$;
+
 -- Get CS 101 course ID
 DO $$
 DECLARE
