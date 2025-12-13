@@ -1,5 +1,3 @@
-'use server';
-
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -41,6 +39,8 @@ export function normalizeTags(tags: string[]): string[] {
  * Returns tags with question counts for autocomplete
  */
 export async function getExistingTags(courseId?: string): Promise<Array<{ tag: string; count: number }>> {
+  'use server';
+  
   const supabase = await createClient();
   
   try {
@@ -91,6 +91,8 @@ export async function suggestTags(
   courseId?: string,
   limit: number = 10
 ): Promise<Array<{ tag: string; count: number; isCommon: boolean }>> {
+  'use server';
+  
   const normalizedQuery = query.toLowerCase().trim();
   
   if (!normalizedQuery) {
@@ -168,6 +170,8 @@ export function validateTags(tags: string[]): { valid: boolean; errors: string[]
  * Returns performance metrics by tag
  */
 export async function getUserTagStats(userId: string, courseId?: string) {
+  'use server';
+  
   const supabase = await createClient();
   
   try {
@@ -197,6 +201,8 @@ export async function getUserTagStats(userId: string, courseId?: string) {
  * Useful for recommending practice topics
  */
 export async function getWeakAreas(userId: string, threshold: number = 60, limit: number = 5) {
+  'use server';
+  
   const supabase = await createClient();
   
   try {
