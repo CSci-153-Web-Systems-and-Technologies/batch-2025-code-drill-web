@@ -41,6 +41,9 @@ BEGIN
     RAISE EXCEPTION 'CS 101 course not found. Please run 20241203_professor_exams.sql first.';
   END IF;
 
+  -- Disable the versioning trigger temporarily during seed to avoid auth.uid() issues
+  ALTER TABLE exam_questions DISABLE TRIGGER IF EXISTS create_question_version_trigger;
+
   -- ========================================================================
   -- LOOPS - CODE ANALYSIS (3 questions)
   -- ========================================================================
@@ -585,6 +588,9 @@ BEGIN
    'A void pointer can point to any data type.',
    true,
    5, ARRAY['pointers', 'void-pointer', 'generic'], true, NOW());
+
+  -- Re-enable the versioning trigger
+  ALTER TABLE exam_questions ENABLE TRIGGER IF EXISTS create_question_version_trigger;
 
   RAISE NOTICE '75 questions successfully seeded for CS 101 (Fundamentals of Programming)';
   RAISE NOTICE 'Topics: loops, arrays, functions, recursion, pointers';
