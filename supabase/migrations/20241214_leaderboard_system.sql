@@ -66,6 +66,12 @@ ON CONFLICT (name) DO NOTHING;
 -- RPC Functions
 -- =====================================================
 
+-- Drop existing functions to avoid conflicts
+DROP FUNCTION IF EXISTS get_user_rank(UUID, UUID, VARCHAR);
+DROP FUNCTION IF EXISTS get_leaderboard(UUID, VARCHAR, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS get_rank_history(UUID, UUID);
+DROP FUNCTION IF EXISTS create_rank_snapshot(UUID, UUID, VARCHAR);
+
 -- Function to get user's current rank (global or course-specific)
 CREATE OR REPLACE FUNCTION get_user_rank(p_user_id UUID, p_course_id UUID DEFAULT NULL, p_category VARCHAR DEFAULT NULL)
 RETURNS TABLE (
