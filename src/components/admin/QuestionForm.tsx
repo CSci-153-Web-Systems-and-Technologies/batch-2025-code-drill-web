@@ -328,25 +328,6 @@ export default function QuestionForm({
           {errors.correct_boolean && <p className="text-red-400 text-sm mt-2">{errors.correct_boolean}</p>}
         </Card>
       )}
-            correctAnswer={formData.correct_answer || undefined}
-            onChange={(correctAnswer) => {
-              handleTypeSpecificChange({
-                correct_answer: correctAnswer,
-                // Clear other type-specific fields
-                blanks: null,
-                expected_output: null,
-                output_tips: null,
-                essay_context: null,
-                essay_requirements: null,
-                essay_structure_guide: null,
-                choices: null,
-                correct_boolean: null,
-              });
-            }}
-          />
-          {errors.correct_answer && <p className="text-red-400 text-sm mt-2">{errors.correct_answer}</p>}
-        </Card>
-      )}
 
       {/* Form Actions */}
       <div className="flex justify-end gap-3">
