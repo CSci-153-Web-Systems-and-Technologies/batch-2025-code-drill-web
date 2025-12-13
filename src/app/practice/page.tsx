@@ -60,10 +60,16 @@ export default function PracticePage() {
         setUser(userData as any);
         
         // Load courses
-        const { data: coursesData } = await supabase
+        const { data: coursesData, error: coursesError } = await supabase
           .from('professor_courses')
-          .select('id, course_code, course_name')
+          .select('id, course_code, name')
           .order('course_code');
+        
+        if (coursesError) {
+          console.error('Error loading courses:', coursesError);
+        }
+        
+        console.log('Loaded courses:', coursesData);
         
         if (coursesData) {
           setCourses(coursesData);
@@ -260,7 +266,7 @@ export default function PracticePage() {
                 <option value="">Select a course...</option>
                 {courses.map((course) => (
                   <option key={course.id} value={course.id}>
-                    {course.course_code} - {course.course_name}
+                    {course.course_code} - {course.name}
                   </option>
                 ))}
               </select>
