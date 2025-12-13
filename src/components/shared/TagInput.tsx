@@ -13,6 +13,12 @@ interface TagInputProps {
   error?: string;
 }
 
+interface TagSuggestion {
+  tag: string;
+  count: number;
+  isCommon: boolean;
+}
+
 export default function TagInput({
   courseId,
   value = [],
@@ -22,7 +28,7 @@ export default function TagInput({
   error,
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState('');
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<TagSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +40,7 @@ export default function TagInput({
       if (inputValue.trim().length > 0) {
         const results = await suggestTags(inputValue, courseId, 10);
         // Filter out already selected tags
-        const filtered = results.filter(tag => !value.includes(tag));
+        const filtered = results.filter(s => !value.includes(s.tag));
         setSuggestions(filtered);
         setShowSuggestions(filtered.length > 0);
         setSelectedIndex(0);
@@ -110,7 +116,7 @@ export default function TagInput({
       
       if (showSuggestions && suggestions.length > 0) {
         // Add selected suggestion
-        addTag(suggestions[selectedIndex]);
+        addTag(suggestions[selectedIndex].tag);
       } else if (inputValue.trim()) {
         // Add manually typed tag
         addTag(inputValue.trim());
@@ -196,17 +202,25 @@ export default function TagInput({
         >
           {suggestions.map((suggestion, index) => (
             <button
-              key={suggestion}
+              key={suggestion.tag}
               type="button"
-              onClick={() => addTag(suggestion)}
-              className={`w-full text-left px-3 py-2 text-sm ${
+              onClick={() => addTag(suggestion.tag)}
+              className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${
                 index === selectedIndex
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-300 hover:bg-gray-700'
               }`}
               onMouseEnter={() => setSelectedIndex(index)}
             >
-              {suggestion}
+              <span>{suggestion.tag}</span>
+              {suggestion.count > 0 && (
+                <span className="text-xs opacity-60">
+                  {suggestion.count} question{suggestion.count !== 1 ? 's' : ''}
+                </span>
+              )}
+              {suggestion.isCommon && suggestion.count === 0 && (
+                <span className="text-xs opacity-60">common</span>
+              )}
             </button>
           ))}
         </div>
