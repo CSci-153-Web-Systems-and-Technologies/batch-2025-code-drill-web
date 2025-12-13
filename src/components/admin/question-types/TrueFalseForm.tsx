@@ -1,7 +1,6 @@
 'use client';
 
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import React from 'react';
 
 interface TrueFalseFormProps {
   correctAnswer?: boolean;
@@ -20,27 +19,41 @@ export function TrueFalseForm({
 
   return (
     <div className="space-y-4">
-      <Label>Correct Answer</Label>
+      <label className="block text-sm font-medium text-gray-700">Correct Answer</label>
       
-      <RadioGroup value={value} onValueChange={handleChange}>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3">
-            <RadioGroupItem value="true" id="true-option" />
-            <Label htmlFor="true-option" className="font-normal cursor-pointer">
-              True
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <RadioGroupItem value="false" id="false-option" />
-            <Label htmlFor="false-option" className="font-normal cursor-pointer">
-              False
-            </Label>
-          </div>
+      <div className="space-y-3">
+        <div className="flex items-center space-x-3">
+          <input
+            type="radio"
+            name="true-false-answer"
+            value="true"
+            checked={value === 'true'}
+            onChange={() => handleChange('true')}
+            id="true-option"
+            className="h-4 w-4"
+          />
+          <label htmlFor="true-option" className="font-normal cursor-pointer">
+            True
+          </label>
         </div>
-      </RadioGroup>
+        
+        <div className="flex items-center space-x-3">
+          <input
+            type="radio"
+            name="true-false-answer"
+            value="false"
+            checked={value === 'false'}
+            onChange={() => handleChange('false')}
+            id="false-option"
+            className="h-4 w-4"
+          />
+          <label htmlFor="false-option" className="font-normal cursor-pointer">
+            False
+          </label>
+        </div>
+      </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-gray-500">
         Select whether the correct answer is True or False.
       </p>
     </div>

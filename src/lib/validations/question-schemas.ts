@@ -92,9 +92,7 @@ export const multipleChoiceSchema = baseQuestionSchema.extend({
 // True/False question schema
 export const trueFalseSchema = baseQuestionSchema.extend({
   question_type: z.literal('true_false'),
-  correct_boolean: z.boolean({
-    required_error: 'Correct answer (true or false) is required',
-  }),
+  correct_boolean: z.boolean(),
   code_snippet: z.null().optional(),
   blanks: z.null().optional(),
   expected_output: z.null().optional(),
@@ -131,16 +129,18 @@ export const questionSchema = z.discriminatedUnion('question_type', [
   identificationSchema,
 ]);
 
-// Schema for creating a new question (includes template_id)
+// Schema for creating a new question (includes course_id and question_type_category)
 export const createQuestionSchema = z.object({
-  template_id: z.string().uuid('Invalid template ID'),
+  course_id: z.string().uuid('Invalid course ID'),
+  question_type_category: z.enum(['code_analysis', 'output_tracing', 'essay', 'multiple_choice', 'true_false']),
   question_number: z.number().int().positive().optional(), // Auto-generated if not provided
 }).and(questionSchema);
 
 // Schema for updating a question (makes all fields optional except id and question_type)
 export const updateQuestionSchema = z.object({
   id: z.string().uuid('Invalid question ID'),
-  template_id: z.string().uuid().optional(),
+  course_id: z.string().uuid().optional(),
+  question_type_category: z.enum(['code_analysis', 'output_tracing', 'essay', 'multiple_choice', 'true_false']).optional(),
   question_number: z.number().int().positive().optional(),
   title: z.string().min(3).max(200).optional(),
   question_text: z.string().min(10).optional(),

@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import Button from '@/components/ui/Button';
 
 interface IdentificationAnswerProps {
   currentAnswer?: string;
@@ -44,19 +43,19 @@ export function IdentificationAnswer({
   return (
     <div className="space-y-4">
       <div>
-        <Input
+        <input
           type="text"
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           onKeyPress={handleKeyPress}
           disabled={isSubmitted}
           placeholder="Type your answer here..."
-          className={`text-lg ${
+          className={`w-full px-3 py-2 border rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             showFeedback && isSubmitted
               ? isCorrect
                 ? 'border-green-500 bg-green-500/10'
                 : 'border-red-500 bg-red-500/10'
-              : ''
+              : 'border-gray-300'
           }`}
         />
       </div>

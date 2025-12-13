@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import Button from '@/components/ui/Button';
 
 interface TrueFalseAnswerProps {
   currentAnswer?: boolean;
@@ -57,57 +55,61 @@ export function TrueFalseAnswer({
 
   return (
     <div className="space-y-4">
-      <RadioGroup 
-        value={selectedAnswer} 
-        onValueChange={setSelectedAnswer}
-        disabled={isSubmitted}
-      >
-        <div className="space-y-3">
-          <div className={`flex items-center space-x-3 p-4 rounded-lg border ${getOptionClassName('true')}`}>
-            <RadioGroupItem 
-              value="true" 
-              id="true-option"
-              disabled={isSubmitted}
-            />
-            <Label 
-              htmlFor="true-option" 
-              className="flex-1 cursor-pointer font-normal text-lg"
-            >
-              True
-            </Label>
-            
-            {showFeedback && correctAnswer === true && (
-              <span className="text-green-400 text-sm font-medium">✓ Correct</span>
-            )}
-            
-            {showFeedback && isSubmitted && selectedAnswer === 'true' && !isCorrect && (
-              <span className="text-red-400 text-sm font-medium">✗ Incorrect</span>
-            )}
-          </div>
-
-          <div className={`flex items-center space-x-3 p-4 rounded-lg border ${getOptionClassName('false')}`}>
-            <RadioGroupItem 
-              value="false" 
-              id="false-option"
-              disabled={isSubmitted}
-            />
-            <Label 
-              htmlFor="false-option" 
-              className="flex-1 cursor-pointer font-normal text-lg"
-            >
-              False
-            </Label>
-            
-            {showFeedback && correctAnswer === false && (
-              <span className="text-green-400 text-sm font-medium">✓ Correct</span>
-            )}
-            
-            {showFeedback && isSubmitted && selectedAnswer === 'false' && !isCorrect && (
-              <span className="text-red-400 text-sm font-medium">✗ Incorrect</span>
-            )}
-          </div>
+      <div className="space-y-3">
+        <div className={`flex items-center space-x-3 p-4 rounded-lg border ${getOptionClassName('true')}`}>
+          <input
+            type="radio"
+            name="true-false"
+            value="true"
+            checked={selectedAnswer === 'true'}
+            onChange={() => setSelectedAnswer('true')}
+            disabled={isSubmitted}
+            id="true-option"
+            className="h-4 w-4"
+          />
+          <label 
+            htmlFor="true-option" 
+            className="flex-1 cursor-pointer font-normal text-lg"
+          >
+            True
+          </label>
+          
+          {showFeedback && correctAnswer === true && (
+            <span className="text-green-400 text-sm font-medium">✓ Correct</span>
+          )}
+          
+          {showFeedback && isSubmitted && selectedAnswer === 'true' && !isCorrect && (
+            <span className="text-red-400 text-sm font-medium">✗ Incorrect</span>
+          )}
         </div>
-      </RadioGroup>
+
+        <div className={`flex items-center space-x-3 p-4 rounded-lg border ${getOptionClassName('false')}`}>
+          <input
+            type="radio"
+            name="true-false"
+            value="false"
+            checked={selectedAnswer === 'false'}
+            onChange={() => setSelectedAnswer('false')}
+            disabled={isSubmitted}
+            id="false-option"
+            className="h-4 w-4"
+          />
+          <label 
+            htmlFor="false-option" 
+            className="flex-1 cursor-pointer font-normal text-lg"
+          >
+            False
+          </label>
+          
+          {showFeedback && correctAnswer === false && (
+            <span className="text-green-400 text-sm font-medium">✓ Correct</span>
+          )}
+          
+          {showFeedback && isSubmitted && selectedAnswer === 'false' && !isCorrect && (
+            <span className="text-red-400 text-sm font-medium">✗ Incorrect</span>
+          )}
+        </div>
+      </div>
 
       {!isSubmitted && (
         <Button
