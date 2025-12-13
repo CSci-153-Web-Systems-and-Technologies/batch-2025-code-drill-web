@@ -3,24 +3,34 @@
 -- to support course-based practice with topic filtering and question history tracking
 
 -- ============================================================================
--- 1. ADD TAGS TO EXAM QUESTIONS
+-- 1. MODIFY EXAM QUESTIONS TABLE
 -- ============================================================================
 
 -- Make template_id and question_number nullable for standalone questions
 ALTER TABLE exam_questions ALTER COLUMN template_id DROP NOT NULL;
 ALTER TABLE exam_questions ALTER COLUMN question_number DROP NOT NULL;
 
--- Add course_id column for standalone questions (questions not tied to templates)
-ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS course_id UUID REFERENCES professor_courses(id);
+-- Drop the unique constraint on (template_id, question_number) since we'll have NULLs
+ALTER TABLE exam_questions DROP CONSTRAINT IF EXISTS exam_questions_template_id_question_number_key;
 
--- Add constraint: either template_id or course_id must be set
+-- Add course_id column for standalone questions (questions not tied to templates)
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS course_id UUID;
+ALTER TABLE exam_questions ADD CONSTRAINT fk_exam_questions_course 
+  FOREIGN KEY (course_id) REFERENCES professor_courses(id) ON DELETE CASCADE;
+
+-- Add constraint: either template_id or course_id must be set (but not both for standalone)
 ALTER TABLE exam_questions DROP CONSTRAINT IF EXISTS exam_questions_source_check;
 ALTER TABLE exam_questions ADD CONSTRAINT exam_questions_source_check 
-  CHECK (template_id IS NOT NULL OR course_id IS NOT NULL);
+  CHECK (
+    (template_id IS NOT NULL AND course_id IS NULL) OR 
+    (template_id IS NULL AND course_id IS NOT NULL)
+  );
 
 -- Add additional columns for new question types
-ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS question_type_category TEXT 
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS question_type_category TEXT;
+ALTER TABLE exam_questions ADD CONSTRAINT exam_questions_type_category_check
   CHECK (question_type_category IN ('code_analysis', 'output_tracing', 'essay', 'multiple_choice', 'true_false'));
+
 ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS choices JSONB;
 ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS correct_answer TEXT;
 ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS correct_boolean BOOLEAN;
