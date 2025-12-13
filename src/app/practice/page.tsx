@@ -61,7 +61,7 @@ export default function PracticePage() {
         
         // Load courses
         const { data: coursesData } = await supabase
-          .from('courses')
+          .from('professor_courses')
           .select('id, course_code, course_name')
           .order('course_code');
         
