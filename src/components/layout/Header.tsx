@@ -1,18 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
 import { User } from '@/types';
 import { StreakDisplay } from '@/components/streaks/StreakDisplay';
+import PracticeDropdown from './PracticeDropdown';
+import ProfileDropdown from './ProfileDropdown';
 
 export default function Header() {
   const pathname = usePathname();
-  const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -44,27 +46,21 @@ export default function Header() {
     fetchUser();
   }, [supabase]);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
-  };
-
-  const navItems = [
-    { name: 'Dashboard', href: '/', icon: 'dashboard', roles: ['student', 'professor', 'admin'] },
-    { name: 'Problems', href: '/problems', icon: 'code', roles: ['student'] },
-    { name: 'Practice', href: '/practice', icon: 'play', roles: ['student'] },
-    { name: 'Challenges', href: '/challenges', icon: 'trophy', roles: ['student'] },
-    { name: 'Professor Exams', href: '/professor-exams', icon: 'exam', roles: ['student'] },
-    { name: 'My Submissions', href: '/submissions/history', icon: 'submissions', roles: ['student'] },
-    { name: 'Courses', href: '/professor-exams', icon: 'exam', roles: ['professor'] },
-    { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy', roles: ['student', 'professor', 'admin'] },
-    { name: 'Community', href: '/community', icon: 'users', roles: ['student', 'professor', 'admin'] },
+  // Simplified navigation for students
+  const studentNavItems = [
+    { name: 'Dashboard', href: '/', icon: 'dashboard' },
+    { name: 'Challenges', href: '/challenges', icon: 'trophy' },
   ];
 
-  // Filter navigation items based on user role
-  const userRole = user?.role || 'student';
-  const filteredNavItems = navItems.filter(item => item.roles.includes(userRole));
+  // Professor navigation
+  const professorNavItems = [
+    { name: 'Dashboard', href: '/', icon: 'dashboard' },
+    { name: 'Professor Exams', href: '/professor-exams', icon: 'exam' },
+  ];
+
+  const navItems = user?.role === 'professor' || user?.role === 'admin' 
+    ? professorNavItems 
+    : studentNavItems;
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -132,7 +128,7 @@ export default function Header() {
 
           {/* Navigation Items */}
           <div className="hidden md:flex items-center space-x-1">
-            {filteredNavItems.map((item) => {
+            {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
@@ -149,6 +145,9 @@ export default function Header() {
                 </Link>
               );
             })}
+            
+            {/* Show Practice dropdown only for students */}
+            {(user?.role === 'student' || !user?.role) && <PracticeDropdown />}
           </div>
 
           {/* Right Section - Points and Profile */}
@@ -168,60 +167,124 @@ export default function Header() {
 
             {/* User Menu */}
             {user && user.name && (
-              <div className="flex items-center space-x-3">
-                <Link
-                  href="/profile"
-                  className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center font-semibold text-sm">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="hidden sm:inline text-sm font-medium">{user.name}</span>
-                </Link>
-                
-                <button
-                  onClick={handleSignOut}
-                  className="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100"
-                  title="Sign out"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                </button>
-              </div>
+              <ProfileDropdown user={{ name: user.name, email: user.email }} />
             )}
 
             {/* Mobile Menu Button */}
-            <button className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100">
+            <button 
+              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden border-t border-gray-200 py-3 hidden">
-          <div className="space-y-1">
-            {filteredNavItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium ${
-                    isActive
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {getIcon(item.icon)}
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-200 py-3 animate-fade-in">
+            <div className="space-y-1">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium ${
+                      isActive
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {getIcon(item.icon)}
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              })}
+              
+              {/* Practice items for students */}
+              {(user?.role === 'student' || !user?.role) && (
+                <>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Practice
+                  </div>
+                  <Link
+                    href="/problems"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    <span>Problem Library</span>
+                  </Link>
+                  <Link
+                    href="/practice"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    </svg>
+                    <span>Practice Sessions</span>
+                  </Link>
+                  <Link
+                    href="/submissions/history"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span>My Submissions</span>
+                  </Link>
+                </>
+              )}
+              
+              {/* Profile items */}
+              <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Account
+              </div>
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>View Profile</span>
+              </Link>
+              <Link
+                href="/leaderboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                <span>Leaderboard</span>
+              </Link>
+              <Link
+                href="/community"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>Community</span>
+              </Link>
+            </div>
           </div>
-        </div>
+        )}
       </nav>
     </header>
   );
