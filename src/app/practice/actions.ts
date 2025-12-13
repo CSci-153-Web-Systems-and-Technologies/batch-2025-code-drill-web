@@ -53,7 +53,6 @@ export async function createPracticeSession(config: PracticeSessionConfig) {
       .from('practice_sessions')
       .insert({
         user_id: user.id,
-        difficulty: null, // No difficulty in exam-based practice
         category: null,
         time_limit: config.timeLimit,
         status: 'active',
@@ -101,7 +100,6 @@ export async function createPracticeSession(config: PracticeSessionConfig) {
       .from('practice_sessions')
       .insert({
         user_id: user.id,
-        difficulty: config.difficulty || null,
         category: config.category || null,
         time_limit: config.timeLimit,
         status: 'active',
