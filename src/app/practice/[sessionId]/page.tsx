@@ -339,17 +339,46 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
                     </pre>
                   </div>
                 )}
+                
+                {/* Output Format Guide */}
+                <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
+                  <h4 className="font-medium text-purple-900 mb-2 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Output Format Guide
+                  </h4>
+                  <div className="text-sm text-purple-800 space-y-2">
+                    <p><strong>Your answer should:</strong></p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>Include the exact output the program produces</li>
+                      <li>Preserve all spaces, punctuation, and line breaks</li>
+                      <li>Use separate lines for each output line</li>
+                      <li>Include quotation marks or special characters as they appear</li>
+                    </ul>
+                    <div className="mt-3 p-3 bg-white rounded border border-purple-200">
+                      <p className="font-medium mb-1">Example format:</p>
+                      <pre className="font-mono text-xs text-purple-900">5 4 3 2 1</pre>
+                      <p className="text-xs mt-1 text-purple-600">or for multi-line output:</p>
+                      <pre className="font-mono text-xs text-purple-900">Hello{'\n'}World{'\n'}!</pre>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    What is the output?
+                    Your Output Answer
                   </label>
                   <textarea
                     value={answers[question.id] || ''}
                     onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                     rows={4}
-                    placeholder="Enter the expected output..."
+                    placeholder="Enter the exact output here..."
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 Be precise - include all spaces and line breaks exactly as they appear
+                  </p>
                 </div>
                 {question.output_tips && (
                   <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
