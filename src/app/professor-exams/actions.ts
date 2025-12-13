@@ -240,80 +240,8 @@ export async function getQuestionWithAnswer(questionId: string): Promise<ExamQue
 // PROGRESS ACTIONS
 // ============================================================================
 
-/**
- * Start or resume an exam session
- */
-export async function startExamSession(
-  courseId: string,
-  templateId: string
-): Promise<ExamSessionData> {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  // Get template and questions
-  const template = await getExamTemplateById(templateId);
-  const questions = await getExamQuestions(templateId);
-
-  // Call RPC to create or get progress
-  const { data: progressId, error: rpcError } = await supabase.rpc('start_exam_session', {
-    p_user_id: user.id,
-    p_course_id: courseId,
-    p_template_id: templateId,
-    p_total_questions: questions.length,
-    p_max_points: template.total_points,
-  });
-
-  if (rpcError) throw rpcError;
-
-  // Get the created/updated progress
-  const { data: progress, error: progressError } = await supabase
-    .from('user_exam_progress')
-    .select('*')
-    .eq('id', progressId)
-    .single();
-
-  if (progressError) throw progressError;
-
-  // Get existing answers
-  const { data: answers } = await supabase
-    .from('user_exam_answers')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('progress_id', progressId);
-
-  return {
-    template,
-    questions,
-    progress,
-    answers: answers || [],
-  };
-}
-
-/**
- * Get user's exam progress
- */
-export async function getUserProgress(templateId: string): Promise<UserExamProgress | null> {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  const { data, error } = await supabase
-    .from('user_exam_progress')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('template_id', templateId)
-    .single();
-
-  if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
-  return data;
-}
+// NOTE: Old template-based functions removed - use category-based approach instead
+// TODO: Implement new category-based progress tracking functions
 
 /**
  * Get exam results

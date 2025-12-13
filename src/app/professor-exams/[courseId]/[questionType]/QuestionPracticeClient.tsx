@@ -362,11 +362,11 @@ export default function QuestionPracticeClient({ courseId, questionType }: Props
       case 'multiple_choice':
         return (
           <div className="space-y-3 mb-6">
-            {currentQuestion.options?.map((option, idx) => (
+            {currentQuestion.choices?.map((choice, idx) => (
               <label
-                key={idx}
+                key={choice.id}
                 className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                  selectedChoice === option
+                  selectedChoice === choice.id
                     ? 'border-blue-500 bg-blue-500/10'
                     : 'border-gray-700 hover:border-gray-600'
                 }`}
@@ -374,12 +374,12 @@ export default function QuestionPracticeClient({ courseId, questionType }: Props
                 <input
                   type="radio"
                   name="multiple-choice"
-                  value={option}
-                  checked={selectedChoice === option}
+                  value={choice.id}
+                  checked={selectedChoice === choice.id}
                   onChange={(e) => setSelectedChoice(e.target.value)}
                   className="mt-1"
                 />
-                <span className="text-gray-300">{option}</span>
+                <span className="text-gray-300">{choice.text}</span>
               </label>
             ))}
           </div>
