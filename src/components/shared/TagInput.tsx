@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { suggestTags, normalizeTags, validateTags } from '@/lib/question-tags';
+import { suggestTags } from '@/lib/question-tags-actions';
+import { normalizeTags, validateTags } from '@/lib/question-tags';
 
 interface TagInputProps {
   courseId?: string;
