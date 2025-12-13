@@ -30,9 +30,9 @@ BEGIN
   END IF;
 END$$;
 
--- Drop the versioning trigger BEFORE the DO block to ensure it takes effect
--- This prevents auth.uid() NULL errors during migration seeding
-DROP TRIGGER IF EXISTS create_question_version_trigger ON exam_questions;
+-- Disable ALL triggers on exam_questions to prevent auth.uid() NULL errors during seeding
+-- We'll re-enable them after the inserts complete
+ALTER TABLE exam_questions DISABLE TRIGGER ALL;
 
 -- Get CS 101 course ID
 DO $$
@@ -598,3 +598,6 @@ BEGIN
   RAISE NOTICE 'Question types: code_analysis, output_tracing, essay, multiple_choice, true_false';
   RAISE NOTICE 'All questions published and tagged';
 END$$;
+
+-- Re-enable all triggers after seeding completes
+ALTER TABLE exam_questions ENABLE TRIGGER ALL;
