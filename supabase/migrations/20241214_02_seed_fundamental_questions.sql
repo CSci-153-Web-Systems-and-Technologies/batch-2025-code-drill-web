@@ -30,9 +30,9 @@ BEGIN
   END IF;
 END$$;
 
--- Disable ALL triggers on exam_questions to prevent auth.uid() NULL errors during seeding
+-- Disable USER triggers only (not system triggers) to prevent auth.uid() NULL errors during seeding
 -- We'll re-enable them after the inserts complete
-ALTER TABLE exam_questions DISABLE TRIGGER ALL;
+ALTER TABLE exam_questions DISABLE TRIGGER USER;
 
 -- Get CS 101 course ID
 DO $$
@@ -599,5 +599,5 @@ BEGIN
   RAISE NOTICE 'All questions published and tagged';
 END$$;
 
--- Re-enable all triggers after seeding completes
-ALTER TABLE exam_questions ENABLE TRIGGER ALL;
+-- Re-enable user triggers after seeding completes
+ALTER TABLE exam_questions ENABLE TRIGGER USER;
