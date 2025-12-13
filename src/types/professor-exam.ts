@@ -3,8 +3,8 @@
 
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 export type ExamStyle = 'code-heavy' | 'design-patterns' | 'balanced';
-export type ExamType = 'code_analysis' | 'output_tracing' | 'essay';
-export type QuestionType = 'fill_blanks' | 'trace_output' | 'essay';
+export type QuestionTypeCategory = 'code_analysis' | 'output_tracing' | 'essay' | 'multiple_choice' | 'true_false';
+export type QuestionType = 'fill_blanks' | 'trace_output' | 'essay' | 'multiple_choice' | 'true_false' | 'identification';
 export type ProgressStatus = 'in_progress' | 'completed' | 'abandoned';
 
 // ============================================================================
@@ -25,19 +25,7 @@ export interface ProfessorCourse {
   updated_at: string;
 }
 
-export interface ExamTemplate {
-  id: string;
-  course_id: string;
-  exam_type: ExamType;
-  title: string;
-  description: string | null;
-  duration_minutes: number;
-  question_count: number;
-  total_points: number;
-  instructions: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Removed ExamTemplate interface - questions now link directly to courses
 
 // ============================================================================
 // QUESTION INTERFACES
@@ -55,9 +43,15 @@ export interface EssayRequirements {
   examples_required: boolean;
 }
 
+export interface MultipleChoiceOption {
+  id: string; // 'a', 'b', 'c', 'd', etc.
+  text: string;
+}
+
 export interface ExamQuestion {
   id: string;
-  template_id: string;
+  course_id: string;
+  question_type_category: QuestionTypeCategory;
   question_number: number;
   title: string;
   question_text: string;
@@ -77,6 +71,13 @@ export interface ExamQuestion {
   essay_context: string | null;
   essay_requirements: EssayRequirements | null;
   essay_structure_guide: string | null;
+  
+  // For multiple choice questions
+  choices: MultipleChoiceOption[] | null; // Array of choice objects
+  correct_answer: string | null; // Choice id for multiple choice, text for identification
+  
+  // For true/false questions
+  correct_boolean: boolean | null;
   
   points: number;
   difficulty: DifficultyLevel | null;
@@ -100,7 +101,7 @@ export interface UserExamProgress {
   id: string;
   user_id: string;
   course_id: string;
-  template_id: string;
+  question_type_category: QuestionTypeCategory;
   
   questions_completed: number;
   total_questions: number;
@@ -135,6 +136,12 @@ export interface UserExamAnswer {
   essay_answer: string | null;
   word_count: number | null;
   
+  // For multiple choice questions
+  selected_choice: string | null; // Selected choice id
+  
+  // For identification and true/false questions
+  identification_answer: string | null; // Text answer for identification, boolean as text for true/false
+  
   is_correct: boolean | null;
   points_earned: number;
   auto_graded: boolean;
@@ -157,9 +164,7 @@ export interface UserExamAnswer {
 // EXTENDED TYPES (WITH JOINS)
 // ============================================================================
 
-export interface ExamTemplateWithProgress extends ExamTemplate {
-  progress?: UserExamProgress;
-}
+// Removed ExamTemplateWithProgress - no longer using templates
 
 export interface CourseWithProgress extends ProfessorCourse {
   code_analysis_progress?: {
@@ -184,7 +189,8 @@ export interface ExamQuestionWithAnswer extends ExamQuestion {
 }
 
 export interface ExamSessionData {
-  template: ExamTemplate;
+  course_id: string;
+  question_type_category: QuestionTypeCategory;
   questions: ExamQuestion[];
   progress: UserExamProgress;
   answers: UserExamAnswer[];
@@ -205,6 +211,18 @@ export interface OutputAnswerInput {
 export interface EssayAnswerInput {
   essay: string;
   word_count: number;
+}
+
+export interface MultipleChoiceAnswerInput {
+  selected_choice: string;
+}
+
+export interface TrueFalseAnswerInput {
+  answer_boolean: boolean;
+}
+
+export interface IdentificationAnswerInput {
+  identification_answer: string;
 }
 
 // ============================================================================

@@ -12,10 +12,10 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfessorExamsPage() {
-  // Route protection: only students can access professor exams
+  // Route protection: require authentication
   const user = await getCurrentUserWithRole();
-  if (!user || user.role !== 'student') {
-    redirect('/');
+  if (!user) {
+    redirect('/login');
   }
 
   const courses = await getCourses(true);
@@ -26,9 +26,14 @@ export default async function ProfessorExamsPage() {
         {/* Main Content */}
         <div className="flex-1">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Professor Exams</h1>
+            <h1 className="text-3xl font-bold mb-2">
+              {user.role === 'professor' || user.role === 'admin' ? 'Course Management' : 'Professor Exams'}
+            </h1>
             <p className="text-gray-400">
-              Practice with real exam-style questions from various courses
+              {user.role === 'professor' || user.role === 'admin' 
+                ? 'Manage exam questions for your courses'
+                : 'Practice with real exam-style questions from various courses'
+              }
             </p>
           </div>
 

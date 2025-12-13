@@ -23,20 +23,8 @@ export default async function EditQuestionPage({ params, searchParams }: EditPag
   
   const view = searchParams.view || 'edit';
   
-  // Extract courseId from template
-  async function getCourseIdFromTemplate() {
-    'use server';
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from('exam_templates')
-      .select('course_id')
-      .eq('id', question.template_id)
-      .single();
-    return data?.course_id || '';
-  }
-  
-  const courseId = await getCourseIdFromTemplate();
+  // Extract courseId from question (template-free system)
+  const courseId = question.course_id || '';
 
   async function handlePublish() {
     'use server';

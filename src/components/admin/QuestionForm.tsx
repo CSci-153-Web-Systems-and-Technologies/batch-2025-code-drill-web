@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Question, questionSchema } from '@/lib/validations/question-schemas';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import FillInBlanksForm from './question-types/FillInBlanksForm';
 import OutputTracingForm from './question-types/OutputTracingForm';
 import EssayForm from './question-types/EssayForm';
+import { MultipleChoiceForm } from './question-types/MultipleChoiceForm';
+import { TrueFalseForm } from './question-types/TrueFalseForm';
+import { IdentificationForm } from './question-types/IdentificationForm';
 
 interface QuestionFormProps {
-  initialData?: Partial<Question> & { id?: string; template_id?: string };
-  templateId?: string;
+  initialData?: Partial<Question> & { id?: string; course_id?: string; question_type_category?: string };
+  courseId: string;
   onSubmit: (data: any) => Promise<{ success: boolean; error?: string; questionId?: string }>;
   onCancel: () => void;
   isEdit?: boolean;
@@ -18,7 +21,7 @@ interface QuestionFormProps {
 
 export default function QuestionForm({ 
   initialData, 
-  templateId,
+  courseId,
   onSubmit, 
   onCancel,
   isEdit = false 
@@ -26,6 +29,7 @@ export default function QuestionForm({
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
     question_text: initialData?.question_text || '',
+    question_type_category: initialData?.question_type_category || ('code_analysis' as const),
     question_type: initialData?.question_type || ('fill_blanks' as const),
     difficulty: initialData?.difficulty || ('Easy' as const),
     points: initialData?.points || 10,
@@ -40,6 +44,11 @@ export default function QuestionForm({
     essay_context: initialData?.essay_context || null,
     essay_requirements: initialData?.essay_requirements || null,
     essay_structure_guide: initialData?.essay_structure_guide || null,
+    
+    // New question type fields
+    choices: initialData?.choices || null,
+    correct_answer: initialData?.correct_answer || null,
+    correct_boolean: initialData?.correct_boolean || null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,8 +95,8 @@ export default function QuestionForm({
     const submitData = {
       ...validation.data,
       ...(initialData?.id && { id: initialData.id }),
-      ...(templateId && { template_id: templateId }),
-      ...(initialData?.template_id && { template_id: initialData.template_id }),
+      course_id: courseId,
+      question_type_category: formData.question_type_category,
     };
 
     try {
@@ -131,21 +140,38 @@ export default function QuestionForm({
             {errors.title && <p className="text-red-400 text-sm mt-1">{errors.title}</p>}
           </div>
 
-          {/* Question Type */}
+          {/* Question Type Category */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Question Type <span className="text-red-400">*</span>
+              Question Category <span className="text-red-400">*</span>
             </label>
             <select
-              value={formData.question_type}
-              onChange={(e) => handleBaseFieldChange('question_type', e.target.value as any)}
+              value={formData.question_type_category}
+              onChange={(e) => {
+                const category = e.target.value as any;
+                // Auto-map category to appropriate question_type
+                let question_type = formData.question_type;
+                if (category === 'code_analysis') question_type = 'fill_blanks';
+                else if (category === 'output_tracing') question_type = 'trace_output';
+                else if (category === 'essay') question_type = 'essay';
+                else if (category === 'multiple_choice') question_type = 'multiple_choice';
+                else if (category === 'true_false') question_type = 'true_false';
+                
+                setFormData(prev => ({ 
+                  ...prev, 
+                  question_type_category: category,
+                  question_type: question_type
+                }));
+              }}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
             >
-              <option value="fill_blanks">Fill in the Blanks (Code Analysis)</option>
-              <option value="trace_output">Trace Output</option>
+              <option value="code_analysis">Code Analysis (Fill in the Blanks)</option>
+              <option value="output_tracing">Output Tracing</option>
               <option value="essay">Essay</option>
+              <option value="multiple_choice">Multiple Choice</option>
+              <option value="true_false">True/False</option>
             </select>
-            {errors.question_type && <p className="text-red-400 text-sm mt-1">{errors.question_type}</p>}
+            {errors.question_type_category && <p className="text-red-400 text-sm mt-1">{errors.question_type_category}</p>}
           </div>
 
           {/* Difficulty and Points Row */}
@@ -216,7 +242,7 @@ export default function QuestionForm({
       </Card>
 
       {/* Type-Specific Form Section */}
-      {formData.question_type === 'fill_blanks' && (
+      {formData.question_type_category === 'code_analysis' && (
         <FillInBlanksForm
           data={{
             code_snippet: formData.code_snippet,
@@ -229,7 +255,7 @@ export default function QuestionForm({
         />
       )}
 
-      {formData.question_type === 'trace_output' && (
+      {formData.question_type_category === 'output_tracing' && (
         <OutputTracingForm
           data={{
             code_snippet: formData.code_snippet,
@@ -241,7 +267,7 @@ export default function QuestionForm({
         />
       )}
 
-      {formData.question_type === 'essay' && (
+      {formData.question_type_category === 'essay' && (
         <EssayForm
           data={{
             essay_context: formData.essay_context,
@@ -251,6 +277,56 @@ export default function QuestionForm({
           onChange={handleTypeSpecificChange}
           errors={errors}
         />
+      )}
+
+      {formData.question_type_category === 'multiple_choice' && (
+        <Card>
+          <h2 className="text-xl font-semibold text-white mb-4">Multiple Choice Options</h2>
+          <MultipleChoiceForm
+            choices={formData.choices || undefined}
+            correctAnswer={formData.correct_answer || undefined}
+            onChange={(choices, correctAnswer) => {
+              handleTypeSpecificChange({
+                choices,
+                correct_answer: correctAnswer,
+                // Clear other type-specific fields
+                blanks: null,
+                expected_output: null,
+                output_tips: null,
+                essay_context: null,
+                essay_requirements: null,
+                essay_structure_guide: null,
+                correct_boolean: null,
+              });
+            }}
+          />
+          {errors.choices && <p className="text-red-400 text-sm mt-2">{errors.choices}</p>}
+          {errors.correct_answer && <p className="text-red-400 text-sm mt-2">{errors.correct_answer}</p>}
+        </Card>
+      )}
+
+      {formData.question_type_category === 'true_false' && (
+        <Card>
+          <h2 className="text-xl font-semibold text-white mb-4">True/False Answer</h2>
+          <TrueFalseForm
+            correctAnswer={formData.correct_boolean !== null ? formData.correct_boolean : undefined}
+            onChange={(correctBoolean) => {
+              handleTypeSpecificChange({
+                correct_boolean: correctBoolean,
+                // Clear other type-specific fields
+                blanks: null,
+                expected_output: null,
+                output_tips: null,
+                essay_context: null,
+                essay_requirements: null,
+                essay_structure_guide: null,
+                choices: null,
+                correct_answer: null,
+              });
+            }}
+          />
+          {errors.correct_boolean && <p className="text-red-400 text-sm mt-2">{errors.correct_boolean}</p>}
+        </Card>
       )}
 
       {/* Form Actions */}

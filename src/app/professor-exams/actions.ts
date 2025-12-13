@@ -4,8 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import {
   ProfessorCourse,
   CourseWithProgress,
-  ExamTemplate,
-  ExamTemplateWithProgress,
   ExamQuestion,
   ExamQuestionWithAnswer,
   UserExamProgress,
@@ -15,6 +13,7 @@ import {
   ExamResults,
   ExamSessionData,
   CourseStats,
+  QuestionTypeCategory,
 } from '@/types/professor-exam';
 
 // ============================================================================
@@ -43,11 +42,9 @@ export async function getCourses(includeProgress = false): Promise<CourseWithPro
     return courses as CourseWithProgress[];
   }
 
-  // Get progress for each course
+  // Get progress for each course by question type category
   const coursesWithProgress = await Promise.all(
     courses.map(async (course) => {
-      const templates = await getCourseExamTemplates(course.id);
-      
       const progressData: CourseWithProgress = {
         ...course,
         code_analysis_progress: undefined,
@@ -55,12 +52,16 @@ export async function getCourses(includeProgress = false): Promise<CourseWithPro
         essay_progress: undefined,
       };
 
-      for (const template of templates) {
+      // Fetch progress for each question type category
+      const categories: QuestionTypeCategory[] = ['code_analysis', 'output_tracing', 'essay', 'multiple_choice', 'true_false'];
+      
+      for (const category of categories) {
         const { data: progress } = await supabase
           .from('user_exam_progress')
           .select('*')
           .eq('user_id', user.id)
-          .eq('template_id', template.id)
+          .eq('course_id', course.id)
+          .eq('question_type_category', category)
           .single();
 
         if (progress) {
@@ -70,11 +71,11 @@ export async function getCourses(includeProgress = false): Promise<CourseWithPro
             accuracy: progress.accuracy,
           };
 
-          if (template.exam_type === 'code_analysis') {
+          if (category === 'code_analysis') {
             progressData.code_analysis_progress = progressSummary;
-          } else if (template.exam_type === 'output_tracing') {
+          } else if (category === 'output_tracing') {
             progressData.output_tracing_progress = progressSummary;
-          } else if (template.exam_type === 'essay') {
+          } else if (category === 'essay') {
             progressData.essay_progress = progressSummary;
           }
         }
@@ -141,59 +142,38 @@ export async function getCourseStats(courseId: string): Promise<CourseStats> {
 }
 
 // ============================================================================
-// EXAM TEMPLATE ACTIONS
+// QUESTION TYPE CATEGORY ACTIONS (Replaces Template Actions)
 // ============================================================================
 
 /**
- * Get all exam templates for a course
+ * Get questions for a course by question type category
  */
-export async function getCourseExamTemplates(courseId: string): Promise<ExamTemplateWithProgress[]> {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  const { data: templates, error } = await supabase
-    .from('exam_templates')
-    .select('*')
-    .eq('course_id', courseId)
-    .order('exam_type');
-
-  if (error) throw error;
-
-  // Get progress for each template
-  const templatesWithProgress = await Promise.all(
-    templates.map(async (template) => {
-      const { data: progress } = await supabase
-        .from('user_exam_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('template_id', template.id)
-        .single();
-
-      return {
-        ...template,
-        progress: progress || undefined,
-      };
-    })
-  );
-
-  return templatesWithProgress;
-}
-
-/**
- * Get a single exam template by ID
- */
-export async function getExamTemplateById(templateId: string): Promise<ExamTemplate> {
+export async function getQuestionsByCategory(
+  courseId: string,
+  category: QuestionTypeCategory
+): Promise<ExamQuestion[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('exam_templates')
+    .from('exam_questions')
     .select('*')
-    .eq('id', templateId)
-    .single();
+    .eq('course_id', courseId)
+    .eq('question_type_category', category)
+    .eq('is_published', true)
+    .order('question_number');
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get statistics for a course's question categories
+ */
+export async function getCourseQuestionStats(courseId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .rpc('get_course_question_stats', { p_course_id: courseId });
 
   if (error) throw error;
   return data;
@@ -204,15 +184,20 @@ export async function getExamTemplateById(templateId: string): Promise<ExamTempl
 // ============================================================================
 
 /**
- * Get all questions for an exam template
+ * Get all questions for a course and category
  */
-export async function getExamQuestions(templateId: string): Promise<ExamQuestion[]> {
+export async function getExamQuestions(
+  courseId: string,
+  category: QuestionTypeCategory
+): Promise<ExamQuestion[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('exam_questions')
     .select('*')
-    .eq('template_id', templateId)
+    .eq('course_id', courseId)
+    .eq('question_type_category', category)
+    .eq('is_published', true)
     .order('question_number');
 
   if (error) throw error;
@@ -255,80 +240,8 @@ export async function getQuestionWithAnswer(questionId: string): Promise<ExamQue
 // PROGRESS ACTIONS
 // ============================================================================
 
-/**
- * Start or resume an exam session
- */
-export async function startExamSession(
-  courseId: string,
-  templateId: string
-): Promise<ExamSessionData> {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  // Get template and questions
-  const template = await getExamTemplateById(templateId);
-  const questions = await getExamQuestions(templateId);
-
-  // Call RPC to create or get progress
-  const { data: progressId, error: rpcError } = await supabase.rpc('start_exam_session', {
-    p_user_id: user.id,
-    p_course_id: courseId,
-    p_template_id: templateId,
-    p_total_questions: questions.length,
-    p_max_points: template.total_points,
-  });
-
-  if (rpcError) throw rpcError;
-
-  // Get the created/updated progress
-  const { data: progress, error: progressError } = await supabase
-    .from('user_exam_progress')
-    .select('*')
-    .eq('id', progressId)
-    .single();
-
-  if (progressError) throw progressError;
-
-  // Get existing answers
-  const { data: answers } = await supabase
-    .from('user_exam_answers')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('progress_id', progressId);
-
-  return {
-    template,
-    questions,
-    progress,
-    answers: answers || [],
-  };
-}
-
-/**
- * Get user's exam progress
- */
-export async function getUserProgress(templateId: string): Promise<UserExamProgress | null> {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  const { data, error } = await supabase
-    .from('user_exam_progress')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('template_id', templateId)
-    .single();
-
-  if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
-  return data;
-}
+// NOTE: Old template-based functions removed - use category-based approach instead
+// TODO: Implement new category-based progress tracking functions
 
 /**
  * Get exam results
@@ -508,6 +421,90 @@ export async function autoSaveEssay(
 
     if (error) throw error;
   }
+}
+
+/**
+ * Submit multiple choice answer
+ */
+export async function submitMultipleChoiceAnswer(
+  questionId: string,
+  progressId: string,
+  selectedChoice: string,
+  timeSpent: number
+): Promise<AnswerCheckResult> {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase.rpc('check_multiple_choice_answer', {
+    p_user_id: user.id,
+    p_question_id: questionId,
+    p_progress_id: progressId,
+    p_selected_choice: selectedChoice,
+    p_time_spent: timeSpent,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Submit true/false answer
+ */
+export async function submitTrueFalseAnswer(
+  questionId: string,
+  progressId: string,
+  answerBoolean: boolean,
+  timeSpent: number
+): Promise<AnswerCheckResult> {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase.rpc('check_true_false_answer', {
+    p_user_id: user.id,
+    p_question_id: questionId,
+    p_progress_id: progressId,
+    p_answer_boolean: answerBoolean,
+    p_time_spent: timeSpent,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Submit identification answer (case-insensitive)
+ */
+export async function submitIdentificationAnswer(
+  questionId: string,
+  progressId: string,
+  identificationAnswer: string,
+  timeSpent: number
+): Promise<AnswerCheckResult> {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase.rpc('check_identification_answer', {
+    p_user_id: user.id,
+    p_question_id: questionId,
+    p_progress_id: progressId,
+    p_identification_answer: identificationAnswer,
+    p_time_spent: timeSpent,
+  });
+
+  if (error) throw error;
+  return data;
 }
 
 // ============================================================================
@@ -769,59 +766,13 @@ export async function getQuestionsWithPublishStatus(
 ) {
   const supabase = await createClient();
   
-  // If filtering by courseId, first get all templates for that course
-  if (courseId && !templateId) {
-    const { data: templates } = await supabase
-      .from('exam_templates')
-      .select('id')
-      .eq('course_id', courseId);
-    
-    if (!templates || templates.length === 0) {
-      return [];
-    }
-    
-    const templateIds = templates.map(t => t.id);
-    
-    let query = supabase
-      .from('exam_questions')
-      .select(`
-        *,
-        exam_templates (
-          title,
-          exam_type,
-          course_id
-        ),
-        users!exam_questions_published_by_fkey (
-          name,
-          email
-        )
-      `)
-      .in('template_id', templateIds)
-      .order('question_number');
-    
-    if (publishedOnly) {
-      query = query.eq('is_published', true);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching questions with publish status:', error);
-      return [];
-    }
-    
-    return data;
-  }
-  
-  // Original logic for templateId filtering
   let query = supabase
     .from('exam_questions')
     .select(`
       *,
-      exam_templates (
-        title,
-        exam_type,
-        course_id
+      professor_courses!exam_questions_course_id_fkey (
+        course_code,
+        name
       ),
       users!exam_questions_published_by_fkey (
         name,
@@ -830,8 +781,9 @@ export async function getQuestionsWithPublishStatus(
     `)
     .order('question_number');
 
-  if (templateId) {
-    query = query.eq('template_id', templateId);
+  // Filter by course_id if provided
+  if (courseId) {
+    query = query.eq('course_id', courseId);
   }
 
   if (publishedOnly) {
@@ -845,7 +797,7 @@ export async function getQuestionsWithPublishStatus(
     return [];
   }
 
-  return data;
+  return data || [];
 }
 
 // ============================================================================
@@ -1010,10 +962,11 @@ export async function getQuestionByPreviewToken(token: string) {
  * Create a new question
  */
 export async function createQuestion(data: {
-  template_id: string;
+  course_id: string;
+  question_type_category: QuestionTypeCategory;
   title: string;
   question_text: string;
-  question_type: 'fill_blanks' | 'trace_output' | 'essay';
+  question_type: 'fill_blanks' | 'trace_output' | 'essay' | 'multiple_choice' | 'true_false' | 'identification';
   difficulty: 'Easy' | 'Medium' | 'Hard';
   points: number;
   code_snippet?: string | null;
@@ -1023,6 +976,9 @@ export async function createQuestion(data: {
   essay_context?: string | null;
   essay_requirements?: any | null;
   essay_structure_guide?: string | null;
+  choices?: Array<{ id: string; text: string }> | null;
+  correct_answer?: string | null;
+  correct_boolean?: boolean | null;
   hints?: string[];
   time_estimate_minutes?: number | null;
   question_number?: number;
@@ -1040,7 +996,8 @@ export async function createQuestion(data: {
     const { data: existingQuestions } = await supabase
       .from('exam_questions')
       .select('question_number')
-      .eq('template_id', data.template_id)
+      .eq('course_id', data.course_id)
+      .eq('question_type_category', data.question_type_category)
       .order('question_number', { ascending: false })
       .limit(1);
     
@@ -1053,7 +1010,8 @@ export async function createQuestion(data: {
   const { data: newQuestion, error: insertError } = await supabase
     .from('exam_questions')
     .insert({
-      template_id: data.template_id,
+      course_id: data.course_id,
+      question_type_category: data.question_type_category,
       question_number: questionNumber,
       title: data.title,
       question_text: data.question_text,
@@ -1067,6 +1025,9 @@ export async function createQuestion(data: {
       essay_context: data.essay_context || null,
       essay_requirements: data.essay_requirements || null,
       essay_structure_guide: data.essay_structure_guide || null,
+      choices: data.choices || null,
+      correct_answer: data.correct_answer || null,
+      correct_boolean: data.correct_boolean || null,
       hints: data.hints || null,
       time_estimate_minutes: data.time_estimate_minutes || null,
       is_published: false,
@@ -1107,11 +1068,12 @@ export async function createQuestion(data: {
  */
 export async function updateQuestion(data: {
   id: string;
-  template_id?: string;
+  course_id?: string;
+  question_type_category?: QuestionTypeCategory;
   question_number?: number;
   title?: string;
   question_text?: string;
-  question_type: 'fill_blanks' | 'trace_output' | 'essay';
+  question_type: 'fill_blanks' | 'trace_output' | 'essay' | 'multiple_choice' | 'true_false' | 'identification';
   difficulty?: 'Easy' | 'Medium' | 'Hard';
   points?: number;
   code_snippet?: string | null;
@@ -1121,6 +1083,9 @@ export async function updateQuestion(data: {
   essay_context?: string | null;
   essay_requirements?: any | null;
   essay_structure_guide?: string | null;
+  choices?: Array<{ id: string; text: string }> | null;
+  correct_answer?: string | null;
+  correct_boolean?: boolean | null;
   hints?: string[];
   time_estimate_minutes?: number | null;
 }) {
@@ -1144,7 +1109,8 @@ export async function updateQuestion(data: {
 
   // Prepare update data (only include provided fields)
   const updateData: any = {};
-  if (data.template_id !== undefined) updateData.template_id = data.template_id;
+  if (data.course_id !== undefined) updateData.course_id = data.course_id;
+  if (data.question_type_category !== undefined) updateData.question_type_category = data.question_type_category;
   if (data.question_number !== undefined) updateData.question_number = data.question_number;
   if (data.title !== undefined) updateData.title = data.title;
   if (data.question_text !== undefined) updateData.question_text = data.question_text;
@@ -1158,6 +1124,9 @@ export async function updateQuestion(data: {
   if (data.essay_context !== undefined) updateData.essay_context = data.essay_context;
   if (data.essay_requirements !== undefined) updateData.essay_requirements = data.essay_requirements;
   if (data.essay_structure_guide !== undefined) updateData.essay_structure_guide = data.essay_structure_guide;
+  if (data.choices !== undefined) updateData.choices = data.choices;
+  if (data.correct_answer !== undefined) updateData.correct_answer = data.correct_answer;
+  if (data.correct_boolean !== undefined) updateData.correct_boolean = data.correct_boolean;
   if (data.hints !== undefined) updateData.hints = data.hints;
   if (data.time_estimate_minutes !== undefined) updateData.time_estimate_minutes = data.time_estimate_minutes;
   
@@ -1243,3 +1212,153 @@ export async function deleteQuestion(questionId: string) {
 
   return { success: true };
 }
+
+// ============================================================================
+// ESSAY SUBMISSION AND GRADING ACTIONS
+// ============================================================================
+
+/**
+ * Submit essay answer for manual grading
+ */
+export async function submitEssayForGrading(input: {
+  questionId: string;
+  courseId: string;
+  questionTypeCategory: QuestionTypeCategory;
+  essayAnswer: string;
+  wordCount: number;
+  timeSpent?: number;
+  hintsUsed?: number;
+}) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
+  const { data, error } = await supabase.rpc('submit_essay_answer', {
+    p_user_id: user.id,
+    p_question_id: input.questionId,
+    p_course_id: input.courseId,
+    p_question_type_category: input.questionTypeCategory,
+    p_essay_answer: input.essayAnswer,
+    p_word_count: input.wordCount,
+    p_time_spent: input.timeSpent || 0,
+    p_hints_used: input.hintsUsed || 0,
+  });
+
+  if (error) {
+    console.error('Error submitting essay:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, ...data };
+}
+
+/**
+ * Grade essay answer (professor only)
+ */
+export async function gradeEssayAnswer(input: {
+  answerId: string;
+  pointsAwarded: number;
+  feedback?: string;
+  rubricScores?: Record<string, number>;
+}) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
+  // Verify professor role
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!userData || (userData.role !== 'professor' && userData.role !== 'admin')) {
+    return { success: false, error: 'Only professors can grade submissions' };
+  }
+
+  const { data, error } = await supabase.rpc('grade_essay_answer', {
+    p_answer_id: input.answerId,
+    p_grader_id: user.id,
+    p_points_awarded: input.pointsAwarded,
+    p_feedback: input.feedback || null,
+    p_rubric_scores: input.rubricScores ? JSON.stringify(input.rubricScores) : null,
+  });
+
+  if (error) {
+    console.error('Error grading essay:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, ...data };
+}
+
+/**
+ * Get submissions requiring grading for a course
+ */
+export async function getSubmissionsForGrading(
+  courseId: string,
+  questionTypeCategory?: QuestionTypeCategory,
+  gradedStatus: 'ungraded' | 'graded' | 'all' = 'ungraded'
+) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // Verify professor role
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!userData || (userData.role !== 'professor' && userData.role !== 'admin')) {
+    throw new Error('Only professors can view submissions');
+  }
+
+  const { data, error } = await supabase.rpc('get_submissions_for_grading', {
+    p_course_id: courseId,
+    p_question_type_category: questionTypeCategory || null,
+    p_graded_status: gradedStatus,
+  });
+
+  if (error) {
+    console.error('Error fetching submissions:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Get student's submission history
+ */
+export async function getStudentSubmissionHistory(courseId?: string) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase.rpc('get_student_submission_history', {
+    p_user_id: user.id,
+    p_course_id: courseId || null,
+  });
+
+  if (error) {
+    console.error('Error fetching submission history:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+

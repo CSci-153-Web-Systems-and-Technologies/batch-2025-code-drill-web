@@ -1,10 +1,12 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCourseById, getCourseExamTemplates, getCourseStats } from '../actions';
+import { getCourseById, getCourseQuestionStats, getCourseStats } from '../actions';
+import { getCurrentUserWithRole } from '@/lib/auth-roles';
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { QuestionTypeCategory } from '@/types/professor-exam';
 
 type Props = {
   params: {
@@ -28,14 +30,77 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CourseExamsPage({ params }: Props) {
   try {
+    const user = await getCurrentUserWithRole();
+    const isProfessor = user?.role === 'professor' || user?.role === 'admin';
+    
     const course = await getCourseById(params.courseId);
-    const templates = await getCourseExamTemplates(params.courseId);
+    const questionStats = await getCourseQuestionStats(params.courseId);
     const stats = await getCourseStats(params.courseId);
 
-    // Group templates by exam type
-    const codeAnalysis = templates.find(t => t.exam_type === 'code_analysis');
-    const outputTracing = templates.find(t => t.exam_type === 'output_tracing');
-    const essay = templates.find(t => t.exam_type === 'essay');
+    // Define question type categories with their display info
+    const questionTypes: Array<{
+      category: QuestionTypeCategory;
+      title: string;
+      description: string;
+      color: string;
+      icon: React.ReactNode;
+    }> = [
+      {
+        category: 'code_analysis',
+        title: 'Code Analysis',
+        description: 'Fill in missing parts of code given snippets and expected outputs',
+        color: 'blue',
+        icon: (
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        ),
+      },
+      {
+        category: 'output_tracing',
+        title: 'Output Tracing',
+        description: 'Write the expected program output for given code snippets',
+        color: 'green',
+        icon: (
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        ),
+      },
+      {
+        category: 'essay',
+        title: 'Essay Questions',
+        description: 'Answer conceptual questions about programming logic and best practices',
+        color: 'purple',
+        icon: (
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        ),
+      },
+      {
+        category: 'multiple_choice',
+        title: 'Multiple Choice',
+        description: 'Select the correct answer from multiple options',
+        color: 'yellow',
+        icon: (
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+        ),
+      },
+      {
+        category: 'true_false',
+        title: 'True/False',
+        description: 'Determine if statements about code and concepts are true or false',
+        color: 'orange',
+        icon: (
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+          </svg>
+        ),
+      },
+    ];
 
     return (
       <Container className="py-8">
@@ -91,205 +156,107 @@ export default async function CourseExamsPage({ params }: Props) {
 
             {/* Exam Type Cards */}
             <div className="space-y-6">
-              <h2 className="text-xl font-bold">Choose Exam Type</h2>
-
-              {/* Code Analysis Exam */}
-              {codeAnalysis && (
-                <Link href={`/professor-exams/${params.courseId}/code-analysis/${codeAnalysis.id}`}>
-                  <Card className="hover:border-blue-500 transition-colors cursor-pointer bg-blue-500/5">
-                    <div className="flex items-start gap-6">
-                      {/* Icon */}
-                      <div className="w-16 h-16 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">
+                  {isProfessor ? 'Question Types' : 'Choose Question Type'}
+                </h2>
+                {isProfessor && (
+                  <div className="flex gap-3">
+                    <Link href={`/professor-exams/${params.courseId}/submissions`}>
+                      <Button variant="secondary">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                         </svg>
-                      </div>
+                        Grade Submissions
+                      </Button>
+                    </Link>
+                    <Link href={`/admin/exams/courses/${params.courseId}/questions`}>
+                      <Button variant="primary">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Create Question
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
 
-                      {/* Content */}
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-blue-400 mb-2">Code Analysis</h3>
-                        <p className="text-gray-400 mb-4">
-                          {codeAnalysis.description || 'Fill in missing parts of code given snippets and expected outputs'}
-                        </p>
+              {questionTypes.map((type) => {
+                const stat = questionStats?.find((s: any) => s.question_type_category === type.category);
+                const questionCount = stat?.published_questions || 0;
+                const draftCount = stat?.draft_questions || 0;
 
-                        <div className="flex items-center gap-6 text-sm text-gray-400 mb-4">
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>~{codeAnalysis.duration_minutes} min</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            <span>{codeAnalysis.question_count} questions</span>
-                          </div>
+                // For professors, always show the card even if no questions
+                // For students, skip if no published questions
+                if (!isProfessor && questionCount === 0) return null;
+
+                return (
+                  <div key={type.category}>
+                    <Card className={`hover:border-${type.color}-500 transition-colors bg-${type.color}-500/5`}>
+                      <div className="flex items-start gap-6">
+                        {/* Icon */}
+                        <div className={`w-16 h-16 bg-${type.color}-500/20 rounded-lg flex items-center justify-center flex-shrink-0 text-${type.color}-400`}>
+                          {type.icon}
                         </div>
 
-                        {/* Progress Bar */}
-                        {codeAnalysis.progress && (
-                          <div className="mb-4">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-gray-400">Progress</span>
-                              <span className="text-gray-400">
-                                {codeAnalysis.progress.questions_completed}/{codeAnalysis.progress.total_questions}
+                        {/* Content */}
+                        <div className="flex-1">
+                          <h3 className={`text-xl font-bold text-${type.color}-400 mb-2`}>{type.title}</h3>
+                          <p className="text-gray-400 mb-4">{type.description}</p>
+
+                          <div className="flex items-center gap-6 text-sm text-gray-400 mb-4">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                              </svg>
+                              <span>
+                                {isProfessor 
+                                  ? `${questionCount} published${draftCount > 0 ? ` • ${draftCount} draft` : ''}`
+                                  : `${questionCount} questions`
+                                }
                               </span>
                             </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2">
-                              <div
-                                className="bg-blue-500 h-2 rounded-full transition-all"
-                                style={{
-                                  width: `${(codeAnalysis.progress.questions_completed / codeAnalysis.progress.total_questions) * 100}%`,
-                                }}
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Avg Accuracy: {codeAnalysis.progress.accuracy.toFixed(0)}%
-                            </p>
                           </div>
-                        )}
 
-                        <Button variant="primary" className="bg-blue-600 hover:bg-blue-700">
-                          {codeAnalysis.progress ? 'Continue Exam' : 'Start Exam'}
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              )}
-
-              {/* Output Tracing Exam */}
-              {outputTracing && (
-                <Link href={`/professor-exams/${params.courseId}/output-tracing/${outputTracing.id}`}>
-                  <Card className="hover:border-green-500 transition-colors cursor-pointer bg-green-500/5">
-                    <div className="flex items-start gap-6">
-                      {/* Icon */}
-                      <div className="w-16 h-16 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-green-400 mb-2">Output Tracing</h3>
-                        <p className="text-gray-400 mb-4">
-                          {outputTracing.description || 'Write the expected program output for given code snippets'}
-                        </p>
-
-                        <div className="flex items-center gap-6 text-sm text-gray-400 mb-4">
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>~{outputTracing.duration_minutes} min</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            <span>{outputTracing.question_count} questions</span>
+                          <div className="flex gap-3">
+                            {isProfessor ? (
+                              <>
+                                <Link href={`/admin/exams/courses/${params.courseId}/questions?category=${type.category}`}>
+                                  <Button variant="primary" className={`bg-${type.color}-600 hover:bg-${type.color}-700`}>
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    Manage Questions
+                                  </Button>
+                                </Link>
+                                {questionCount > 0 && (
+                                  <Link href={`/professor-exams/${params.courseId}/${type.category}`}>
+                                    <Button variant="secondary">
+                                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                      Preview
+                                    </Button>
+                                  </Link>
+                                )}
+                              </>
+                            ) : (
+                              <Link href={`/professor-exams/${params.courseId}/${type.category}`}>
+                                <Button variant="primary" className={`bg-${type.color}-600 hover:bg-${type.color}-700`}>
+                                  Start Practice
+                                </Button>
+                              </Link>
+                            )}
                           </div>
                         </div>
-
-                        {/* Progress Bar */}
-                        {outputTracing.progress && (
-                          <div className="mb-4">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-gray-400">Progress</span>
-                              <span className="text-gray-400">
-                                {outputTracing.progress.questions_completed}/{outputTracing.progress.total_questions}
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2">
-                              <div
-                                className="bg-green-500 h-2 rounded-full transition-all"
-                                style={{
-                                  width: `${(outputTracing.progress.questions_completed / outputTracing.progress.total_questions) * 100}%`,
-                                }}
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Avg Accuracy: {outputTracing.progress.accuracy.toFixed(0)}%
-                            </p>
-                          </div>
-                        )}
-
-                        <Button variant="primary" className="bg-green-600 hover:bg-green-700">
-                          {outputTracing.progress ? 'Continue Exam' : 'Start Exam'}
-                        </Button>
                       </div>
-                    </div>
-                  </Card>
-                </Link>
-              )}
-
-              {/* Essay Questions Exam */}
-              {essay && (
-                <Link href={`/professor-exams/${params.courseId}/essay/${essay.id}`}>
-                  <Card className="hover:border-purple-500 transition-colors cursor-pointer bg-purple-500/5">
-                    <div className="flex items-start gap-6">
-                      {/* Icon */}
-                      <div className="w-16 h-16 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-purple-400 mb-2">Essay Questions</h3>
-                        <p className="text-gray-400 mb-4">
-                          {essay.description || 'Answer conceptual questions about programming logic and best practices'}
-                        </p>
-
-                        <div className="flex items-center gap-6 text-sm text-gray-400 mb-4">
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>~{essay.duration_minutes} min</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            <span>{essay.question_count} questions</span>
-                          </div>
-                        </div>
-
-                        {/* Progress Bar */}
-                        {essay.progress && (
-                          <div className="mb-4">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-gray-400">Progress</span>
-                              <span className="text-gray-400">
-                                {essay.progress.questions_completed}/{essay.progress.total_questions}
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2">
-                              <div
-                                className="bg-purple-500 h-2 rounded-full transition-all"
-                                style={{
-                                  width: `${(essay.progress.questions_completed / essay.progress.total_questions) * 100}%`,
-                                }}
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Questions Completed
-                            </p>
-                          </div>
-                        )}
-
-                        <Button variant="primary" className="bg-purple-600 hover:bg-purple-700">
-                          {essay.progress ? 'Continue Exam' : 'Start Exam'}
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              )}
+                    </Card>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

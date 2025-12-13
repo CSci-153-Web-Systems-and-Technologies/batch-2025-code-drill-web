@@ -37,7 +37,7 @@ export default function EditQuestionForm({ question, courseId }: EditQuestionFor
   return (
     <QuestionForm
       initialData={question}
-      templateId={question.template_id}
+      courseId={courseId}
       onSubmit={handleSubmit}
       onCancel={handleCancel}
       isEdit={true}
