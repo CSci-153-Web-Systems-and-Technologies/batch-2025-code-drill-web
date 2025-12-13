@@ -1,9 +1,13 @@
 -- Migration: Fix question versioning trigger to remove template_id references
 -- This updates the trigger created in 20241203_question_versioning.sql to work with the template-free system
 
--- Drop existing trigger and function
+-- Drop existing triggers first
 DROP TRIGGER IF EXISTS exam_question_version_trigger ON exam_questions;
-DROP FUNCTION IF EXISTS create_question_version();
+DROP TRIGGER IF EXISTS trigger_version_question_on_insert ON exam_questions;
+DROP TRIGGER IF EXISTS trigger_version_question_on_update ON exam_questions;
+
+-- Drop the function with CASCADE to remove any remaining dependencies
+DROP FUNCTION IF EXISTS create_question_version() CASCADE;
 
 -- Recreate the function without template_id
 CREATE OR REPLACE FUNCTION create_question_version()
