@@ -799,10 +799,6 @@ export async function getQuestionsWithPublishStatus(
 
   return data || [];
 }
-  }
-
-  return data;
-}
 
 // ============================================================================
 // PREVIEW TOKEN ACTIONS
