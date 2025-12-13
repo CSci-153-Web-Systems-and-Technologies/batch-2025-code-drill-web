@@ -47,7 +47,7 @@ BEGIN
     WHERE tgname = 'create_question_version_trigger' 
     AND tgrelid = 'exam_questions'::regclass
   ) THEN
-    ALTER TABLE exam_questions DISABLE TRIGGER create_question_version_trigger;
+    EXECUTE 'ALTER TABLE exam_questions DISABLE TRIGGER create_question_version_trigger';
   END IF;
 
   -- ========================================================================
@@ -601,7 +601,7 @@ BEGIN
     WHERE tgname = 'create_question_version_trigger' 
     AND tgrelid = 'exam_questions'::regclass
   ) THEN
-    ALTER TABLE exam_questions ENABLE TRIGGER create_question_version_trigger;
+    EXECUTE 'ALTER TABLE exam_questions ENABLE TRIGGER create_question_version_trigger';
   END IF;
 
   RAISE NOTICE '75 questions successfully seeded for CS 101 (Fundamentals of Programming)';
