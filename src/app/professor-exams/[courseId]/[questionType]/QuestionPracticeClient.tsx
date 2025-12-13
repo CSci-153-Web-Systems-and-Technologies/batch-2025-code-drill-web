@@ -9,7 +9,8 @@ import {
   submitEssayAnswer,
   submitMultipleChoiceAnswer,
   submitTrueFalseAnswer,
-  trackHintUsage 
+  trackHintUsage,
+  submitEssayForGrading
 } from '@/app/professor-exams/actions';
 import { ExamQuestion, QuestionTypeCategory } from '@/types/professor-exam';
 import Container from '@/components/shared/Container';
@@ -139,12 +140,28 @@ export default function QuestionPracticeClient({ courseId, questionType }: Props
           break;
 
         case 'essay':
-          // Essays can't be auto-graded, just mark as submitted
-          setFeedback({
-            show: true,
-            correct: true,
-            points: 0, // Requires manual grading
+          // Submit essay for manual grading
+          const wordCount = essayAnswer.trim().split(/\s+/).filter(word => word.length > 0).length;
+          
+          const essayResult = await submitEssayForGrading({
+            questionId: currentQuestion.id,
+            courseId,
+            questionTypeCategory: questionType,
+            essayAnswer,
+            wordCount,
+            timeSpent,
+            hintsUsed: showHints ? 1 : 0,
           });
+          
+          if (essayResult.success) {
+            setFeedback({
+              show: true,
+              correct: true,
+              points: 0, // Will be awarded after manual grading
+            });
+          } else {
+            throw new Error(essayResult.error || 'Failed to submit essay');
+          }
           break;
 
         case 'multiple_choice':

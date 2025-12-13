@@ -1212,3 +1212,153 @@ export async function deleteQuestion(questionId: string) {
 
   return { success: true };
 }
+
+// ============================================================================
+// ESSAY SUBMISSION AND GRADING ACTIONS
+// ============================================================================
+
+/**
+ * Submit essay answer for manual grading
+ */
+export async function submitEssayForGrading(input: {
+  questionId: string;
+  courseId: string;
+  questionTypeCategory: QuestionTypeCategory;
+  essayAnswer: string;
+  wordCount: number;
+  timeSpent?: number;
+  hintsUsed?: number;
+}) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
+  const { data, error } = await supabase.rpc('submit_essay_answer', {
+    p_user_id: user.id,
+    p_question_id: input.questionId,
+    p_course_id: input.courseId,
+    p_question_type_category: input.questionTypeCategory,
+    p_essay_answer: input.essayAnswer,
+    p_word_count: input.wordCount,
+    p_time_spent: input.timeSpent || 0,
+    p_hints_used: input.hintsUsed || 0,
+  });
+
+  if (error) {
+    console.error('Error submitting essay:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, ...data };
+}
+
+/**
+ * Grade essay answer (professor only)
+ */
+export async function gradeEssayAnswer(input: {
+  answerId: string;
+  pointsAwarded: number;
+  feedback?: string;
+  rubricScores?: Record<string, number>;
+}) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
+  // Verify professor role
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!userData || (userData.role !== 'professor' && userData.role !== 'admin')) {
+    return { success: false, error: 'Only professors can grade submissions' };
+  }
+
+  const { data, error } = await supabase.rpc('grade_essay_answer', {
+    p_answer_id: input.answerId,
+    p_grader_id: user.id,
+    p_points_awarded: input.pointsAwarded,
+    p_feedback: input.feedback || null,
+    p_rubric_scores: input.rubricScores ? JSON.stringify(input.rubricScores) : null,
+  });
+
+  if (error) {
+    console.error('Error grading essay:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, ...data };
+}
+
+/**
+ * Get submissions requiring grading for a course
+ */
+export async function getSubmissionsForGrading(
+  courseId: string,
+  questionTypeCategory?: QuestionTypeCategory,
+  gradedStatus: 'ungraded' | 'graded' | 'all' = 'ungraded'
+) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // Verify professor role
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!userData || (userData.role !== 'professor' && userData.role !== 'admin')) {
+    throw new Error('Only professors can view submissions');
+  }
+
+  const { data, error } = await supabase.rpc('get_submissions_for_grading', {
+    p_course_id: courseId,
+    p_question_type_category: questionTypeCategory || null,
+    p_graded_status: gradedStatus,
+  });
+
+  if (error) {
+    console.error('Error fetching submissions:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Get student's submission history
+ */
+export async function getStudentSubmissionHistory(courseId?: string) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase.rpc('get_student_submission_history', {
+    p_user_id: user.id,
+    p_course_id: courseId || null,
+  });
+
+  if (error) {
+    console.error('Error fetching submission history:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
