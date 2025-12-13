@@ -346,7 +346,7 @@ export default function PracticePage() {
                 <p className="text-sm text-blue-800">
                   <span className="font-semibold">{availableCount} questions</span> available with current filters.
                   {(config.questionTypes || []).length > 0 && (
-                    <> You'll practice {Math.min(availableCount, config.questionTypes.length)} questions (1 per selected type).</>
+                    <> You'll practice {Math.min(availableCount, (config.questionTypes || []).length)} questions (1 per selected type).</>
                   )}
                   {(config.questionTypes || []).length === 0 && (
                     <> You'll practice up to 5 questions (1 per type).</>

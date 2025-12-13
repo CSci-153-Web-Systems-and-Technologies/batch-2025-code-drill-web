@@ -107,7 +107,7 @@ export async function selectPracticeQuestions(
         }
         
         // Priority 3: Older questions first
-        return new Date(a.last_seen_at).getTime() - new Date(b.last_seen_at).getTime();
+        return new Date(a.last_seen_at || 0).getTime() - new Date(b.last_seen_at || 0).getTime();
       }
       
       // Priority 4: Random for never-seen questions

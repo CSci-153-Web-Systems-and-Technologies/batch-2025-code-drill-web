@@ -19,6 +19,7 @@ interface PracticeExamQuestion {
   id: string;
   session_id: string;
   exam_question_id: string;
+  user_answer?: any;
   answered_at: string | null;
   is_correct: boolean | null;
   time_spent_seconds: number | null;
@@ -309,7 +310,7 @@ export default function SessionReviewPage({ params }: ReviewPageProps) {
                             let minWords = 0;
                             let maxWords = Infinity;
                             
-                            if (typeof requirements === 'object' && requirements.word_count) {
+                            if (typeof requirements === 'object' && requirements !== null && requirements.word_count) {
                               minWords = requirements.word_count[0];
                               maxWords = requirements.word_count[1];
                             }

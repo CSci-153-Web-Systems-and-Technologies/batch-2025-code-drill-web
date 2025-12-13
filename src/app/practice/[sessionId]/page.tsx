@@ -436,7 +436,7 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
                       let minWords = 0;
                       let maxWords = Infinity;
                       
-                      if (typeof requirements === 'object' && requirements.word_count) {
+                      if (typeof requirements === 'object' && requirements !== null && requirements.word_count) {
                         minWords = requirements.word_count[0];
                         maxWords = requirements.word_count[1];
                       }
@@ -467,7 +467,7 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
                       const requirements = question.essay_requirements;
                       let maxWords = Infinity;
                       
-                      if (typeof requirements === 'object' && requirements.word_count) {
+                      if (typeof requirements === 'object' && requirements !== null && requirements.word_count) {
                         maxWords = requirements.word_count[1];
                       }
                       
