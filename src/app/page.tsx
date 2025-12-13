@@ -36,7 +36,7 @@ export default async function Home() {
                 : "Ready to continue your coding journey?"}
             </p>
           </div>
-          <Button size="lg">
+          <Button size="lg" className="transition-all duration-300 hover:scale-105 hover:shadow-lg touch-manipulation min-h-[44px]">
             <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
             </svg>
@@ -48,14 +48,14 @@ export default async function Home() {
         <StreakWarning />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <StatCard
             icon={
               <svg className="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
               </svg>
             }
-            value={user.totalPoints.toString()}
+            value={user.totalPoints}
             label="Total Points"
             color="bg-yellow-50"
           />
@@ -65,7 +65,7 @@ export default async function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             }
-            value={user.problemsSolved.toString()}
+            value={user.problemsSolved}
             label="Problems Solved"
             color="bg-green-50"
           />
@@ -78,6 +78,7 @@ export default async function Home() {
             value={user.currentStreak === 0 ? "0 days" : `${user.currentStreak} days`}
             label="Current Streak"
             color="bg-orange-50"
+            pulse={user.currentStreak > 0}
           />
           <StatCard
             icon={
