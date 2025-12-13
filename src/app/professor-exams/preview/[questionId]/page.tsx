@@ -20,13 +20,11 @@ export default async function PreviewQuestionPage({ params }: PreviewPageProps) 
   }
 
   // Get question data
-  const questionData = await getQuestionWithAnswer(params.questionId);
+  const question = await getQuestionWithAnswer(params.questionId);
   
-  if (!questionData) {
+  if (!question) {
     notFound();
   }
-
-  const { question } = questionData;
 
   return (
     <Container>
