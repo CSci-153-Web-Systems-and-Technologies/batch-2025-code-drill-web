@@ -3,7 +3,7 @@
 
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 export type ExamStyle = 'code-heavy' | 'design-patterns' | 'balanced';
-export type ExamType = 'code_analysis' | 'output_tracing' | 'essay';
+export type QuestionTypeCategory = 'code_analysis' | 'output_tracing' | 'essay' | 'multiple_choice' | 'true_false';
 export type QuestionType = 'fill_blanks' | 'trace_output' | 'essay' | 'multiple_choice' | 'true_false' | 'identification';
 export type ProgressStatus = 'in_progress' | 'completed' | 'abandoned';
 
@@ -25,19 +25,7 @@ export interface ProfessorCourse {
   updated_at: string;
 }
 
-export interface ExamTemplate {
-  id: string;
-  course_id: string;
-  exam_type: ExamType;
-  title: string;
-  description: string | null;
-  duration_minutes: number;
-  question_count: number;
-  total_points: number;
-  instructions: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Removed ExamTemplate interface - questions now link directly to courses
 
 // ============================================================================
 // QUESTION INTERFACES
@@ -62,7 +50,8 @@ export interface MultipleChoiceOption {
 
 export interface ExamQuestion {
   id: string;
-  template_id: string;
+  course_id: string;
+  question_type_category: QuestionTypeCategory;
   question_number: number;
   title: string;
   question_text: string;
@@ -112,7 +101,7 @@ export interface UserExamProgress {
   id: string;
   user_id: string;
   course_id: string;
-  template_id: string;
+  question_type_category: QuestionTypeCategory;
   
   questions_completed: number;
   total_questions: number;
@@ -175,9 +164,7 @@ export interface UserExamAnswer {
 // EXTENDED TYPES (WITH JOINS)
 // ============================================================================
 
-export interface ExamTemplateWithProgress extends ExamTemplate {
-  progress?: UserExamProgress;
-}
+// Removed ExamTemplateWithProgress - no longer using templates
 
 export interface CourseWithProgress extends ProfessorCourse {
   code_analysis_progress?: {
@@ -202,7 +189,8 @@ export interface ExamQuestionWithAnswer extends ExamQuestion {
 }
 
 export interface ExamSessionData {
-  template: ExamTemplate;
+  course_id: string;
+  question_type_category: QuestionTypeCategory;
   questions: ExamQuestion[];
   progress: UserExamProgress;
   answers: UserExamAnswer[];
