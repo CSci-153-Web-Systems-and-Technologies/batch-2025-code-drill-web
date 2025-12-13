@@ -4,8 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import {
   ProfessorCourse,
   CourseWithProgress,
-  ExamTemplate,
-  ExamTemplateWithProgress,
   ExamQuestion,
   ExamQuestionWithAnswer,
   UserExamProgress,
@@ -15,6 +13,7 @@ import {
   ExamResults,
   ExamSessionData,
   CourseStats,
+  QuestionTypeCategory,
 } from '@/types/professor-exam';
 
 // ============================================================================
@@ -43,11 +42,9 @@ export async function getCourses(includeProgress = false): Promise<CourseWithPro
     return courses as CourseWithProgress[];
   }
 
-  // Get progress for each course
+  // Get progress for each course by question type category
   const coursesWithProgress = await Promise.all(
     courses.map(async (course) => {
-      const templates = await getCourseExamTemplates(course.id);
-      
       const progressData: CourseWithProgress = {
         ...course,
         code_analysis_progress: undefined,
@@ -55,12 +52,16 @@ export async function getCourses(includeProgress = false): Promise<CourseWithPro
         essay_progress: undefined,
       };
 
-      for (const template of templates) {
+      // Fetch progress for each question type category
+      const categories: QuestionTypeCategory[] = ['code_analysis', 'output_tracing', 'essay', 'multiple_choice', 'true_false'];
+      
+      for (const category of categories) {
         const { data: progress } = await supabase
           .from('user_exam_progress')
           .select('*')
           .eq('user_id', user.id)
-          .eq('template_id', template.id)
+          .eq('course_id', course.id)
+          .eq('question_type_category', category)
           .single();
 
         if (progress) {
@@ -70,11 +71,11 @@ export async function getCourses(includeProgress = false): Promise<CourseWithPro
             accuracy: progress.accuracy,
           };
 
-          if (template.exam_type === 'code_analysis') {
+          if (category === 'code_analysis') {
             progressData.code_analysis_progress = progressSummary;
-          } else if (template.exam_type === 'output_tracing') {
+          } else if (category === 'output_tracing') {
             progressData.output_tracing_progress = progressSummary;
-          } else if (template.exam_type === 'essay') {
+          } else if (category === 'essay') {
             progressData.essay_progress = progressSummary;
           }
         }
@@ -141,59 +142,38 @@ export async function getCourseStats(courseId: string): Promise<CourseStats> {
 }
 
 // ============================================================================
-// EXAM TEMPLATE ACTIONS
+// QUESTION TYPE CATEGORY ACTIONS (Replaces Template Actions)
 // ============================================================================
 
 /**
- * Get all exam templates for a course
+ * Get questions for a course by question type category
  */
-export async function getCourseExamTemplates(courseId: string): Promise<ExamTemplateWithProgress[]> {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  const { data: templates, error } = await supabase
-    .from('exam_templates')
-    .select('*')
-    .eq('course_id', courseId)
-    .order('exam_type');
-
-  if (error) throw error;
-
-  // Get progress for each template
-  const templatesWithProgress = await Promise.all(
-    templates.map(async (template) => {
-      const { data: progress } = await supabase
-        .from('user_exam_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('template_id', template.id)
-        .single();
-
-      return {
-        ...template,
-        progress: progress || undefined,
-      };
-    })
-  );
-
-  return templatesWithProgress;
-}
-
-/**
- * Get a single exam template by ID
- */
-export async function getExamTemplateById(templateId: string): Promise<ExamTemplate> {
+export async function getQuestionsByCategory(
+  courseId: string,
+  category: QuestionTypeCategory
+): Promise<ExamQuestion[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('exam_templates')
+    .from('exam_questions')
     .select('*')
-    .eq('id', templateId)
-    .single();
+    .eq('course_id', courseId)
+    .eq('question_type_category', category)
+    .eq('is_published', true)
+    .order('question_number');
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get statistics for a course's question categories
+ */
+export async function getCourseQuestionStats(courseId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .rpc('get_course_question_stats', { p_course_id: courseId });
 
   if (error) throw error;
   return data;
@@ -204,15 +184,20 @@ export async function getExamTemplateById(templateId: string): Promise<ExamTempl
 // ============================================================================
 
 /**
- * Get all questions for an exam template
+ * Get all questions for a course and category
  */
-export async function getExamQuestions(templateId: string): Promise<ExamQuestion[]> {
+export async function getExamQuestions(
+  courseId: string,
+  category: QuestionTypeCategory
+): Promise<ExamQuestion[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('exam_questions')
     .select('*')
-    .eq('template_id', templateId)
+    .eq('course_id', courseId)
+    .eq('question_type_category', category)
+    .eq('is_published', true)
     .order('question_number');
 
   if (error) throw error;
@@ -1094,7 +1079,8 @@ export async function getQuestionByPreviewToken(token: string) {
  * Create a new question
  */
 export async function createQuestion(data: {
-  template_id: string;
+  course_id: string;
+  question_type_category: QuestionTypeCategory;
   title: string;
   question_text: string;
   question_type: 'fill_blanks' | 'trace_output' | 'essay' | 'multiple_choice' | 'true_false' | 'identification';
@@ -1127,7 +1113,8 @@ export async function createQuestion(data: {
     const { data: existingQuestions } = await supabase
       .from('exam_questions')
       .select('question_number')
-      .eq('template_id', data.template_id)
+      .eq('course_id', data.course_id)
+      .eq('question_type_category', data.question_type_category)
       .order('question_number', { ascending: false })
       .limit(1);
     
@@ -1140,7 +1127,8 @@ export async function createQuestion(data: {
   const { data: newQuestion, error: insertError } = await supabase
     .from('exam_questions')
     .insert({
-      template_id: data.template_id,
+      course_id: data.course_id,
+      question_type_category: data.question_type_category,
       question_number: questionNumber,
       title: data.title,
       question_text: data.question_text,
@@ -1197,7 +1185,8 @@ export async function createQuestion(data: {
  */
 export async function updateQuestion(data: {
   id: string;
-  template_id?: string;
+  course_id?: string;
+  question_type_category?: QuestionTypeCategory;
   question_number?: number;
   title?: string;
   question_text?: string;
@@ -1237,7 +1226,8 @@ export async function updateQuestion(data: {
 
   // Prepare update data (only include provided fields)
   const updateData: any = {};
-  if (data.template_id !== undefined) updateData.template_id = data.template_id;
+  if (data.course_id !== undefined) updateData.course_id = data.course_id;
+  if (data.question_type_category !== undefined) updateData.question_type_category = data.question_type_category;
   if (data.question_number !== undefined) updateData.question_number = data.question_number;
   if (data.title !== undefined) updateData.title = data.title;
   if (data.question_text !== undefined) updateData.question_text = data.question_text;
