@@ -6,11 +6,34 @@
 -- 1. ADD TAGS TO EXAM QUESTIONS
 -- ============================================================================
 
+-- Make template_id and question_number nullable for standalone questions
+ALTER TABLE exam_questions ALTER COLUMN template_id DROP NOT NULL;
+ALTER TABLE exam_questions ALTER COLUMN question_number DROP NOT NULL;
+
+-- Add course_id column for standalone questions (questions not tied to templates)
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS course_id UUID REFERENCES professor_courses(id);
+
+-- Add constraint: either template_id or course_id must be set
+ALTER TABLE exam_questions DROP CONSTRAINT IF EXISTS exam_questions_source_check;
+ALTER TABLE exam_questions ADD CONSTRAINT exam_questions_source_check 
+  CHECK (template_id IS NOT NULL OR course_id IS NOT NULL);
+
+-- Add additional columns for new question types
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS question_type_category TEXT 
+  CHECK (question_type_category IN ('code_analysis', 'output_tracing', 'essay', 'multiple_choice', 'true_false'));
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS choices JSONB;
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS correct_answer TEXT;
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS correct_boolean BOOLEAN;
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT false;
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS published_at TIMESTAMP WITH TIME ZONE;
+
 -- Add tags array column to exam_questions
 ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
 
 -- Create GIN index for efficient array searching
 CREATE INDEX IF NOT EXISTS idx_exam_questions_tags ON exam_questions USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_exam_questions_course ON exam_questions(course_id);
+CREATE INDEX IF NOT EXISTS idx_exam_questions_published ON exam_questions(is_published);
 
 -- Function to auto-lowercase tags on insert/update
 CREATE OR REPLACE FUNCTION lowercase_tags()
