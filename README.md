@@ -108,7 +108,14 @@ The platform uses Supabase with PostgreSQL. Key tables include:
 - `challenges` - Challenge system
 - `skills` - Skills tracking and progression
 - `announcements` - Course announcements
-- `rank_snapshots` - Historical rank trac in Supabase SQL Editor:
+- `rank_snapshots` - Historical rank tracking (30 days)
+- `achievement_badges` - Badge definitions with emoji icons
+- `user_badges` - User-earned achievement badges
+- `daily_activity` - Streak tracking with grace period support
+
+### Running Migrations
+
+Execute migrations in chronological order in Supabase SQL Editor:
 
 1. **Core System** (Run first):
 ```sql
@@ -131,7 +138,38 @@ The platform uses Supabase with PostgreSQL. Key tables include:
 20241212_announcements.sql
 ```
 
-2. **New│   └── leaderboard/    # Leaderboard CSV export
+2. **New Features** (December 2024 release):
+```sql
+-- Question type expansion
+20241214_extend_question_types.sql
+
+-- Template removal (breaking change)
+20241214_remove_exam_templates.sql
+
+-- Versioning fixes
+20241214_fix_versioning_trigger.sql
+
+-- Essay grading system
+20241214_essay_submission_grading.sql
+
+-- Leaderboard system (run last)
+20241214_leaderboard_system.sql
+```
+
+**Important**: The leaderboard migration includes:
+- 3 new tables: `rank_snapshots`, `achievement_badges`, `user_badges`
+- 4 RPC functions with `SECURITY DEFINER` to bypass RLS
+- Achievement badge seeding
+- Leaderboard visibility column for users
+
+## Project Structure
+
+```
+├── src/
+│   ├── app/                    # Next.js app router pages
+│   │   ├── admin/              # Admin/professor pages
+│   │   ├── api/                # API routes
+│   │   │   └── leaderboard/    # Leaderboard CSV export
 │   │   ├── auth/               # Authentication pages
 │   │   ├── challenges/         # Challenge system
 │   │   ├── leaderboard/        # Global leaderboard & rankings
@@ -192,7 +230,19 @@ The platform uses Supabase with PostgreSQL. Key tables include:
 │   ├── utils/
 │   │   └── helpers.ts          # Utility functions
 │   └── styles/
-│   🏆 Leaderboard System
+│       └── globals.css         # Global styles + Tailwind
+├── supabase/
+│   └── migrations/             # Database migrations (run in order)
+├── public/                     # Static assets
+│   ├── fonts/
+│   ├── icons/
+│   └── images/
+└── tailwind.config.ts          # Tailwind + custom animations
+```
+
+## Key Features Implementation
+
+### 🏆 Leaderboard System
 **Global competitive ranking with achievement badges:**
 - **Real-time Rankings**: Students ranked by total points, problems solved, and avg score
 - **Achievement Badges**: 4 auto-awarded emoji badges based on performance milestones
@@ -228,7 +278,28 @@ Integration with Judge0 for secure code execution:
 - Multiple language support (JavaScript, Python, C++, Java)
 - Test case validation with hidden test cases
 - Performance metrics (runtime, memory usage)
-- MUI/UX Enhancements
+- Memory and time limits enforcement
+- Automatic points calculation based on difficulty and solve time
+- Real-time output display with error messages
+
+### 📊 Skills Tracking
+Automatic skill progression based on:
+- Problem completion by category (Arrays, Strings, DP, Trees, Graphs)
+- Difficulty levels (Easy, Medium, Hard)
+- Practice consistency (streaks)
+- Challenge participation and performance
+- Top 4 skills displayed on dashboard with progress bars
+
+### 🔥 Streak System
+**Daily activity tracking with grace period:**
+- Automatic streak updates on problem completion
+- 1-day grace period to prevent streak breaks
+- Visual calendar showing last 30 days of activity
+- Streak stats with pulsing fire emoji animations
+- Streak warnings when at risk of breaking
+- Integration with achievement badges (🔥 Consistent badge)
+
+## UI/UX Enhancements
 
 ### Custom Animations (Tailwind Config)
 All animations are GPU-accelerated for 60fps performance:
@@ -296,70 +367,6 @@ All animations are GPU-accelerated for 60fps performance:
 - Use server actions for data mutations
 - Comment complex logic
 - Keep functions small and focused
-- Problem completion by category (Arrays, Strings, DP, Trees, Graphs)
-- Difficulty levels (Easy, Medium, Hard)
-- Practice consistency (streaks)
-- Challenge participation and performance
-- Top 4 skills displayed on dashboard with progress bars
-
-### 🔥 Streak System
-**Daily activity tracking with grace period:**
-- Automatic streak updates on problem completion
-- 1-day grace period to prevent streak breaks
-- Visual calendar showing last 30 days of activity
-- Streak stats with pulsing fire emoji animations
-- Streak warnings when at risk of breaking
-- Integration with achievement badges (🔥 Consistent badge)
-## Project Structure
-
-```
-├── src/
-│   ├── app/                    # Next.js app router pages
-│   │   ├── admin/              # Admin/professor pages
-│   │   ├── api/                # API routes
-│   │   ├── auth/               # Authentication pages
-│   │   ├── challenges/         # Challenge system
-│   │   ├── practice/           # Practice mode
-│   │   ├── problems/           # Problem library
-│   │   ├── professor-exams/    # Exam management
-│   │   ├── profile/            # User profiles
-│   │   └── submissions/        # Submission history
-│   ├── components/             # React components
-│   │   ├── admin/              # Professor components
-│   │   ├── editor/             # Code editor
-│   │   ├── layout/             # Layout components
-│   │   └── shared/             # Shared components
-│   ├── lib/                    # Utilities and helpers
-│   │   └── supabase/           # Supabase client
-│   ├── types/                  # TypeScript definitions
-│   └── styles/                 # Global styles
-├── supabase/
-│   └── migrations/             # Database migrations
-└── public/                     # Static assets
-```
-
-## Key Features Implementation
-
-### Essay Submission & Manual Grading
-Students can submit essay answers that require manual grading by professors. The system:
-- Tracks submissions requiring grading
-- Provides a dedicated grading interface
-- Stores grading rubric scores
-- Maintains submission history with feedback
-
-### Code Execution
-Integration with Judge0 for secure code execution:
-- Multiple language support
-- Test case validation
-- Performance metrics
-- Memory and time limits
-
-### Skills Tracking
-Automatic skill progression based on:
-- Problem completion
-- Difficulty levels
-- Practice consistency
-- Challenge participation
 
 ## Scripts
 
@@ -375,13 +382,6 @@ Required environment variables:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 - `JUDGE0_API_URL` - Judge0 API endpoint
 - `JUDGE0_API_KEY` - Judge0 API authentication key
-
-## Contributing
-
-1. Create a feature branch from `develop`
-2. Make your changes
-3. Test thoroughly
-4. Submit a pull request to `develop`
 
 ## License
 
