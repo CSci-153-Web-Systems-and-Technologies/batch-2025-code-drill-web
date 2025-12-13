@@ -8,10 +8,11 @@
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS leaderboard_visible BOOLEAN DEFAULT true;
 
--- Set leaderboard_visible to true for all existing users
+-- Set leaderboard_visible to true for all existing student users
+-- This ensures all students appear on leaderboard by default
 UPDATE users
 SET leaderboard_visible = true
-WHERE leaderboard_visible IS NULL;
+WHERE role = 'student' AND (leaderboard_visible IS NULL OR leaderboard_visible = false);
 
 -- Create rank_snapshots table for historical rank tracking
 CREATE TABLE IF NOT EXISTS rank_snapshots (
