@@ -3,7 +3,6 @@ import type { QuestionTypeCategory } from './professor-exam';
 export interface PracticeSession {
   id: string;
   user_id: string;
-  difficulty: 'easy' | 'medium' | 'hard' | null;
   category: string | null;
   time_limit: number;
   started_at: string;
