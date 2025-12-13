@@ -199,6 +199,7 @@ ALTER TABLE user_question_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_tag_stats ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for practice_exam_questions
+DROP POLICY IF EXISTS "Users can view their own practice exam questions" ON practice_exam_questions;
 CREATE POLICY "Users can view their own practice exam questions"
   ON practice_exam_questions FOR SELECT
   USING (
@@ -207,6 +208,7 @@ CREATE POLICY "Users can view their own practice exam questions"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert their own practice exam questions" ON practice_exam_questions;
 CREATE POLICY "Users can insert their own practice exam questions"
   ON practice_exam_questions FOR INSERT
   WITH CHECK (
@@ -215,6 +217,7 @@ CREATE POLICY "Users can insert their own practice exam questions"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update their own practice exam questions" ON practice_exam_questions;
 CREATE POLICY "Users can update their own practice exam questions"
   ON practice_exam_questions FOR UPDATE
   USING (
@@ -224,32 +227,39 @@ CREATE POLICY "Users can update their own practice exam questions"
   );
 
 -- RLS Policies for user_question_history
+DROP POLICY IF EXISTS "Users can view their own question history" ON user_question_history;
 CREATE POLICY "Users can view their own question history"
   ON user_question_history FOR SELECT
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can insert their own question history" ON user_question_history;
 CREATE POLICY "Users can insert their own question history"
   ON user_question_history FOR INSERT
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update their own question history" ON user_question_history;
 CREATE POLICY "Users can update their own question history"
   ON user_question_history FOR UPDATE
   USING (user_id = auth.uid());
 
 -- RLS Policies for user_tag_stats
+DROP POLICY IF EXISTS "Users can view their own tag stats" ON user_tag_stats;
 CREATE POLICY "Users can view their own tag stats"
   ON user_tag_stats FOR SELECT
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can insert their own tag stats" ON user_tag_stats;
 CREATE POLICY "Users can insert their own tag stats"
   ON user_tag_stats FOR INSERT
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update their own tag stats" ON user_tag_stats;
 CREATE POLICY "Users can update their own tag stats"
   ON user_tag_stats FOR UPDATE
   USING (user_id = auth.uid());
 
 -- Professors can view all tag stats for their courses
+DROP POLICY IF EXISTS "Professors can view tag stats for their courses" ON user_tag_stats;
 CREATE POLICY "Professors can view tag stats for their courses"
   ON user_tag_stats FOR SELECT
   USING (
