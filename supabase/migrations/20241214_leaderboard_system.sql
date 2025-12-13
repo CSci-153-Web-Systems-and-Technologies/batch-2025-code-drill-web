@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS rank_snapshots (
   rank INTEGER NOT NULL,
   total_points INTEGER NOT NULL,
   problems_solved INTEGER NOT NULL,
-  avg_score DECIMAL(5,2),
+  avg_score INTEGER,
   current_streak INTEGER NOT NULL DEFAULT 0,
   snapshot_date DATE NOT NULL DEFAULT CURRENT_DATE,
   course_id UUID REFERENCES professor_courses(id) ON DELETE CASCADE,
@@ -84,7 +84,7 @@ RETURNS TABLE (
   total_users BIGINT,
   total_points INTEGER,
   problems_solved INTEGER,
-  avg_score DECIMAL(5,2),
+  avg_score INTEGER,
   current_streak INTEGER,
   badges JSONB
 ) 
@@ -144,11 +144,11 @@ CREATE OR REPLACE FUNCTION get_leaderboard(
 RETURNS TABLE (
   user_id UUID,
   rank BIGINT,
-  name VARCHAR,
+  name TEXT,
   email VARCHAR,
   total_points INTEGER,
   problems_solved INTEGER,
-  avg_score DECIMAL(5,2),
+  avg_score INTEGER,
   current_streak INTEGER,
   rank_change INTEGER,
   badges JSONB
@@ -256,7 +256,7 @@ DECLARE
   v_rank BIGINT;
   v_total_points INTEGER;
   v_problems_solved INTEGER;
-  v_avg_score DECIMAL(5,2);
+  v_avg_score INTEGER;
   v_current_streak INTEGER;
 BEGIN
   -- Get current rank and stats
