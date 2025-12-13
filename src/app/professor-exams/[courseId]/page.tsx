@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCourseById, getCourseQuestionStats, getCourseStats } from '../actions';
+import { getCurrentUserWithRole } from '@/lib/auth-roles';
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -29,6 +30,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CourseExamsPage({ params }: Props) {
   try {
+    const user = await getCurrentUserWithRole();
+    const isProfessor = user?.role === 'professor' || user?.role === 'admin';
+    
     const course = await getCourseById(params.courseId);
     const questionStats = await getCourseQuestionStats(params.courseId);
     const stats = await getCourseStats(params.courseId);
@@ -152,18 +156,34 @@ export default async function CourseExamsPage({ params }: Props) {
 
             {/* Exam Type Cards */}
             <div className="space-y-6">
-              <h2 className="text-xl font-bold">Choose Question Type</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">
+                  {isProfessor ? 'Question Types' : 'Choose Question Type'}
+                </h2>
+                {isProfessor && (
+                  <Link href={`/admin/exams/courses/${params.courseId}/questions`}>
+                    <Button variant="primary">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Create Question
+                    </Button>
+                  </Link>
+                )}
+              </div>
 
               {questionTypes.map((type) => {
                 const stat = questionStats?.find((s: any) => s.question_type_category === type.category);
                 const questionCount = stat?.published_questions || 0;
+                const draftCount = stat?.draft_questions || 0;
 
-                // Skip if no questions for this type
-                if (questionCount === 0) return null;
+                // For professors, always show the card even if no questions
+                // For students, skip if no published questions
+                if (!isProfessor && questionCount === 0) return null;
 
                 return (
-                  <Link key={type.category} href={`/professor-exams/${params.courseId}/${type.category}`}>
-                    <Card className={`hover:border-${type.color}-500 transition-colors cursor-pointer bg-${type.color}-500/5`}>
+                  <div key={type.category}>
+                    <Card className={`hover:border-${type.color}-500 transition-colors bg-${type.color}-500/5`}>
                       <div className="flex items-start gap-6">
                         {/* Icon */}
                         <div className={`w-16 h-16 bg-${type.color}-500/20 rounded-lg flex items-center justify-center flex-shrink-0 text-${type.color}-400`}>
@@ -180,17 +200,51 @@ export default async function CourseExamsPage({ params }: Props) {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                               </svg>
-                              <span>{questionCount} questions</span>
+                              <span>
+                                {isProfessor 
+                                  ? `${questionCount} published${draftCount > 0 ? ` • ${draftCount} draft` : ''}`
+                                  : `${questionCount} questions`
+                                }
+                              </span>
                             </div>
                           </div>
 
-                          <Button variant="primary" className={`bg-${type.color}-600 hover:bg-${type.color}-700`}>
-                            Start Practice
-                          </Button>
+                          <div className="flex gap-3">
+                            {isProfessor ? (
+                              <>
+                                <Link href={`/admin/exams/courses/${params.courseId}/questions?category=${type.category}`}>
+                                  <Button variant="primary" className={`bg-${type.color}-600 hover:bg-${type.color}-700`}>
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    Manage Questions
+                                  </Button>
+                                </Link>
+                                {questionCount > 0 && (
+                                  <Link href={`/professor-exams/${params.courseId}/${type.category}`}>
+                                    <Button variant="secondary">
+                                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                      Preview
+                                    </Button>
+                                  </Link>
+                                )}
+                              </>
+                            ) : (
+                              <Link href={`/professor-exams/${params.courseId}/${type.category}`}>
+                                <Button variant="primary" className={`bg-${type.color}-600 hover:bg-${type.color}-700`}>
+                                  Start Practice
+                                </Button>
+                              </Link>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </Card>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
