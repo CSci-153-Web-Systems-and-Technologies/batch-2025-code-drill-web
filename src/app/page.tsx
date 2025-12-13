@@ -10,6 +10,7 @@ import { StreakCalendar } from '@/components/streaks/StreakCalendar';
 import ActiveChallenges from '@/components/challenges/ActiveChallenges';
 import { getCurrentUserWithRole } from '@/lib/auth-roles';
 import { getProfessorDashboardStats } from '@/lib/professor-dashboard';
+import { getWeeklyProblemsSolved } from '@/lib/dashboard-stats';
 import { DashboardQuickActions } from '@/components/admin/DashboardQuickActions';
 import { redirect } from 'next/navigation';
 
@@ -22,6 +23,9 @@ export default async function Home() {
 
   // Student Dashboard
   if (user.role === 'student') {
+    // Get weekly problems solved
+    const weeklyProblemsSolved = await getWeeklyProblemsSolved(user.id);
+
     return (
       <Container className="py-8">
         {/* Header Section */}
@@ -96,7 +100,7 @@ export default async function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Weekly Goal & Skill Progress */}
           <div className="lg:col-span-2 space-y-6">
-            <WeeklyGoal current={7} goal={10} />
+            <WeeklyGoal current={weeklyProblemsSolved} goal={10} />
             <SkillProgress />
             <StreakCalendar />
           </div>
