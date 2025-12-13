@@ -244,7 +244,29 @@ export default function SessionReviewPage({ params }: ReviewPageProps) {
                     {question.essay_requirements && (
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-medium text-blue-800 mb-2">Requirements:</h4>
-                        <p className="text-blue-700 text-sm whitespace-pre-wrap">{question.essay_requirements}</p>
+                        <div className="text-blue-700 text-sm space-y-2">
+                          {typeof question.essay_requirements === 'object' ? (
+                            <>
+                              {question.essay_requirements.word_count && (
+                                <p>
+                                  <strong>Word Count:</strong> {question.essay_requirements.word_count[0]} - {question.essay_requirements.word_count[1]} words
+                                </p>
+                              )}
+                              {question.essay_requirements.key_concepts && question.essay_requirements.key_concepts.length > 0 && (
+                                <p>
+                                  <strong>Key Concepts:</strong> {question.essay_requirements.key_concepts.join(', ')}
+                                </p>
+                              )}
+                              {question.essay_requirements.examples_required !== undefined && (
+                                <p>
+                                  <strong>Examples Required:</strong> {question.essay_requirements.examples_required ? 'Yes' : 'No'}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{question.essay_requirements}</p>
+                          )}
+                        </div>
                       </div>
                     )}
                     {question.essay_structure_guide && (
