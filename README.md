@@ -9,26 +9,37 @@ A comprehensive web-based coding practice and examination platform built with Ne
 - **Problem Library**: Browse and filter problems by difficulty, topic, and skills
 - **Live Code Editor**: CodeMirror-powered editor with syntax highlighting and theme support
 - **Challenges**: Participate in competitive coding challenges
-- **Skills Tracking**: Monitor progress and skill development
+- **Global Leaderboard**: Compete with peers, track rankings, and earn achievement badges
+- **Achievement Badges**: Unlock 4 unique emoji badges (🌟 Rising Star, 🔥 Consistent, 🏆 Problem Master, ⚡ Speed Demon)
+- **Rank History**: View 30-day rank progression with SVG charts
+- **Skills Tracking**: Monitor progress and skill development across problem categories
 - **Submission History**: View past submissions with feedback and grading
-- **Streaks**: Track daily practice consistency
-- **Profile Management**: Customize profile and view activity statistics
+- **Streaks**: Track daily practice consistency with visual calendar
+- **Weekly Goals**: Set and track weekly problem-solving targets
+- **Profile Management**: Customize profile, toggle leaderboard visibility, and view activity statistics
 
 ### For Professors
 - **Course Management**: Create and manage courses with enrolled students
 - **Question Bank**: Build comprehensive question repositories with version control
-- **Exam Creation**: Design exams with various question types (multiple choice, coding, essay)
-- **Manual Grading**: Grade essay questions and provide detailed feedback
-- **Submission Review**: View and grade student submissions with rubric support
+- **5 Question Types**: Multiple Choice, True/False, Code Analysis, Output Tracing, Essay
+- **Exam Creation**: Design exams with various question types and categories
+- **Manual Grading**: Grade essay questions and provide detailed feedback with rubric support
+- **Submission Review**: View and grade student submissions with comprehensive grading interface
+- **Batch Operations**: Grade multiple submissions efficiently
+- **CSV Export**: Download leaderboard and grading data for record-keeping
 - **Analytics Dashboard**: Monitor student performance and engagement
 - **Announcements**: Share important updates with students
 - **Class Roster**: Manage student enrollments and permissions
 
 ### Question Types
-- Multiple Choice Questions (MCQ)
-- Coding Problems with automated testing
-- Essay Questions with manual grading
-- Version control for question updates
+1. **Multiple Choice Questions (MCQ)**: Single/multiple correct answers with auto-grading
+2. **True/False**: Binary choice questions with instant feedback
+3. **Code Analysis**: Analyze code snippets and answer questions about them
+4. **Output Tracing**: Predict the output of given code
+5. **Essay Questions**: Long-form answers with manual grading and word count validation
+6. **Coding Problems**: Full programming challenges with automated test case validation
+- Version control for all question types
+- Category-based organization (Arrays, Strings, DP, Trees, Graphs, etc.)
 
 ## Tech Stack
 
@@ -84,28 +95,221 @@ npm run dev
 ## Database Setup
 
 The platform uses Supabase with PostgreSQL. Key tables include:
-- `users` - User accounts and profiles
+- `users` - User accounts, profiles, and leaderboard visibility
 - `professor_courses` - Course management
-- `question_bank` - Question repository
+- `question_bank` - Question repository with version control
 - `professor_exams` - Exam configuration
-- `exam_questions` - Question-exam relationships
-- `user_exam_answers` - Student submissions and grading
+- `exam_questions` - Question-exam relationships (direct course linkage)
+- `user_exam_answers` - Student submissions and grading with manual review support
+- `user_exam_progress` - Exam completion tracking by category
 - `practice_sessions` - Practice mode tracking
+- `problems` - Coding problem library
+- `submissions` - Code submission history
 - `challenges` - Challenge system
-- `skills` - Skills tracking
+- `skills` - Skills tracking and progression
 - `announcements` - Course announcements
+- `rank_snapshots` - Historical rank trac in Supabase SQL Editor:
 
-### Running Migrations
-
-Execute migrations in chronological order:
+1. **Core System** (Run first):
 ```sql
--- In Supabase SQL Editor
-\i supabase/migrations/20241202_challenges.sql
-\i supabase/migrations/20241202_practice_sessions.sql
-\i supabase/migrations/20241203_professor_exams.sql
--- ... and so on
+-- User roles and authentication
+20241203_user_roles.sql
+
+-- Challenge system
+20241202_challenges.sql
+20241202_practice_sessions.sql
+
+-- Exam and question system
+20241203_professor_exams.sql
+20241203_question_versioning.sql
+20241203_publish_preview.sql
+
+-- Skills tracking
+20241203_skills_tracking.sql
+
+-- Announcements
+20241212_announcements.sql
 ```
 
+2. **New│   └── leaderboard/    # Leaderboard CSV export
+│   │   ├── auth/               # Authentication pages
+│   │   ├── challenges/         # Challenge system
+│   │   ├── leaderboard/        # Global leaderboard & rankings
+│   │   │   ├── category/       # Category-specific rankings
+│   │   │   └── actions.ts      # Leaderboard server actions
+│   │   ├── practice/           # Practice mode
+│   │   ├── problems/           # Problem library
+│   │   ├── professor-exams/    # Exam management
+│   │   │   └── [courseId]/     # Course-specific exams
+│   │   │       ├── submissions/ # Grading interface
+│   │   │       └── [questionType]/ # Question creation by type
+│   │   ├── profile/            # User profiles
+│   │   ├── skills/             # Skills tracking
+│   │   ├── streaks/            # Streak management
+│   │   └── submissions/        # Submission history
+│   │       └── history/        # Detailed submission log
+│   ├── components/             # React components
+│   │   ├── admin/              # Professor components
+│   │   │   ├── SubmissionGradingInterface.tsx
+│   │   │   ├── QuestionForm.tsx
+│   │   │   └── question-types/ # Question type forms
+│   │   ├── challenges/         # Challenge components
+│   │   ├── editor/             # Code editor (CodeMirror)
+│   │   ├── layout/             # Layout components
+│   │   │   ├── Header.tsx      # Navigation with dropdowns
+│   │   │   ├── PracticeDropdown.tsx
+│   │   │   ├── ProfileDropdown.tsx
+│   │   │   └── MobileNav.tsx
+│   │   ├── leaderboard/        # Leaderboard components
+│   │   │   ├── LeaderboardTable.tsx
+│   │   │   ├── BadgeDisplay.tsx
+│   │   │   └── RankHistoryChart.tsx
+│   │   ├── profile/            # Profile components
+│   │   ├── shared/             # Shared components
+│   │   ├── streaks/            # Streak components
+│   │   ├── submissions/        # Submission components
+│   │   └── ui/                 # UI primitives
+│   ├── hooks/                  # Custom React hooks
+│   │   └── useCountUp.ts       # Number animation hook
+│   ├── lib/                    # Utilities and helpers
+│   │   ├── auth-roles.ts       # Role-based access control
+│   │   ├── auth.ts             # Authentication utilities
+│   │   ├── dashboard-stats.ts  # Dashboard data fetching
+│   │   ├── problems.ts         # Problem utilities
+│   │   ├── professor-dashboard.ts # Professor analytics
+│   │   ├── scoring.ts          # Points calculation
+│   │   ├── skills.ts           # Skills progression
+│   │   ├── streaks.ts          # Streak management
+│   │   ├── streaks-utils.ts    # Streak utilities
+│   │   ├── submissions.ts      # Submission queries
+│   │   └── supabase/           # Supabase client
+│   ├── types/                  # TypeScript definitions
+│   │   ├── index.ts            # Core types
+│   │   ├── challenge.ts        # Challenge types
+│   │   ├── practice.ts         # Practice types
+│   │   ├── professor-exam.ts   # Exam types
+│   │   └── skills.ts           # Skills types
+│   ├── utils/
+│   │   └── helpers.ts          # Utility functions
+│   └── styles/
+│   🏆 Leaderboard System
+**Global competitive ranking with achievement badges:**
+- **Real-time Rankings**: Students ranked by total points, problems solved, and avg score
+- **Achievement Badges**: 4 auto-awarded emoji badges based on performance milestones
+  - 🌟 **Rising Star**: Climbed 10+ ranks in the past week
+  - 🔥 **Consistent**: Maintained a 7-day streak
+  - 🏆 **Problem Master**: Solved 50+ problems
+  - ⚡ **Speed Demon**: Solved 10 problems in one day
+- **Rank History**: SVG-based charts showing 30-day rank progression
+- **Privacy Controls**: Students can toggle leaderboard visibility
+- **Top 3 Medals**: 🥇🥈🥉 displayed for podium positions
+- **Rank Changes**: ↑↓ indicators showing daily improvement/decline
+- **CSV Export**: Professors can export leaderboard data
+- **Performance**: All animations GPU-accelerated, 60fps rendering
+
+**Technical Implementation:**
+- `SECURITY DEFINER` RPC functions bypass RLS for accurate counts
+- Daily rank snapshots stored in `rank_snapshots` table
+- Badges automatically awarded via `checkAndAwardBadges()` function
+- Pure SVG charts (no third-party libraries)
+
+### 📝 Essay Submission & Manual Grading
+Students can submit essay answers that require manual grading by professors. The system:
+- **Word Count Validation**: Min/max word limits with real-time counter
+- **Submission Tracking**: Auto-flags submissions requiring manual review
+- **Grading Interface**: Dedicated UI at `/professor-exams/[courseId]/submissions`
+- **Rubric Support**: Store grading rubric scores in JSONB
+- **Feedback System**: Professors provide detailed written feedback
+- **Submission History**: Students view all submissions with grading status
+- **CSV Export**: Download grading data for record-keeping
+
+### ⚡ Code Execution
+Integration with Judge0 for secure code execution:
+- Multiple language support (JavaScript, Python, C++, Java)
+- Test case validation with hidden test cases
+- Performance metrics (runtime, memory usage)
+- MUI/UX Enhancements
+
+### Custom Animations (Tailwind Config)
+All animations are GPU-accelerated for 60fps performance:
+- `shimmer` - Loading state shimmer effect
+- `fadeIn` - Staggered fade-in animations
+- `scaleIn` - Entrance scale animations
+- `glowPulse` - Celebration glow effects
+- `bounceSubtle` - Active state indicators
+- `countUp` - Number increment animations
+
+### Responsive Design
+- Mobile-first approach
+- Touch-friendly targets (44px minimum)
+- Hamburger menu for mobile navigation
+- Optimized for all screen sizes
+- Reduced motion support for accessibility
+
+### Performance Optimizations
+- Transform-based animations (no layout reflows)
+- `will-change` hints for GPU acceleration
+- Lazy loading for images and components
+- Server-side rendering for initial load
+- Optimized bundle size (~6KB increase for all features)
+
+## API Routes
+
+### Leaderboard Export
+- **Endpoint**: `/api/leaderboard/export`
+- **Method**: GET
+- **Auth**: Professors only
+- **Response**: CSV file with rankings and stats
+- **Fields**: Rank, Name, Email, Points, Solved, Avg Score, Streak, Rank Change, Badges
+
+## Server Actions
+
+### Leaderboard Actions (`src/app/leaderboard/actions.ts`)
+- `getLeaderboardData()` - Fetch paginated rankings
+- `getUserRank()` - Get current user's rank and stats
+- `getRankHistory()` - Fetch 30-day rank progression
+- `createRankSnapshot()` - Create daily rank snapshot
+- `updateLeaderboardVisibility()` - Toggle privacy
+- `awardBadge()` - Award achievement badge to user
+- `checkAndAwardBadges()` - Auto-award based on criteria
+- `exportLeaderboardCSV()` - Generate CSV export
+
+### Dashboard Stats (`src/lib/dashboard-stats.ts`)
+- `getWeeklyProblemsSolved()` - Count unique problems solved this week
+
+## Contributing
+
+### Git Workflow
+1. Create a feature branch from `develop`: `git checkout -b feature/your-feature`
+2. For bug fixes, create hotfix branches: `git checkout -b hotfix/bug-description`
+3. Make your changes with descriptive commits
+4. Test thoroughly (including mobile)
+5. Submit a pull request to `develop`
+6. After review, merge to `develop`
+7. When ready for release, merge `develop` to `main`
+
+### Code Style
+- Use TypeScript strict mode
+- Follow ESLint configuration
+- Use Tailwind CSS for styling (no inline styles)
+- Prefer server components over client components
+- Use server actions for data mutations
+- Comment complex logic
+- Keep functions small and focused
+- Problem completion by category (Arrays, Strings, DP, Trees, Graphs)
+- Difficulty levels (Easy, Medium, Hard)
+- Practice consistency (streaks)
+- Challenge participation and performance
+- Top 4 skills displayed on dashboard with progress bars
+
+### 🔥 Streak System
+**Daily activity tracking with grace period:**
+- Automatic streak updates on problem completion
+- 1-day grace period to prevent streak breaks
+- Visual calendar showing last 30 days of activity
+- Streak stats with pulsing fire emoji animations
+- Streak warnings when at risk of breaking
+- Integration with achievement badges (🔥 Consistent badge)
 ## Project Structure
 
 ```
