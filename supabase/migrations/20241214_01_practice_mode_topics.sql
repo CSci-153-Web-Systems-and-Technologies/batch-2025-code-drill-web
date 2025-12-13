@@ -14,8 +14,15 @@ BEGIN
     WHERE table_name = 'exam_questions' AND column_name = 'template_id'
   ) THEN
     ALTER TABLE exam_questions ADD COLUMN template_id UUID;
-    ALTER TABLE exam_questions ADD CONSTRAINT fk_exam_questions_template 
-      FOREIGN KEY (template_id) REFERENCES exam_templates(id) ON DELETE CASCADE;
+    
+    -- Only add foreign key constraint if exam_templates table exists
+    IF EXISTS (
+      SELECT 1 FROM information_schema.tables 
+      WHERE table_name = 'exam_templates'
+    ) THEN
+      ALTER TABLE exam_questions ADD CONSTRAINT fk_exam_questions_template 
+        FOREIGN KEY (template_id) REFERENCES exam_templates(id) ON DELETE CASCADE;
+    END IF;
   END IF;
 END $$;
 
