@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import CodeWithBlanks from '@/components/practice/CodeWithBlanks';
 import { createClient } from '@/lib/supabase/client';
 import { updateSessionStatus } from '../actions';
 import { recordQuestionAnswer } from '@/lib/question-selection';
@@ -306,25 +307,26 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
             {/* Question Type Specific Rendering */}
             {question.question_type_category === 'code_analysis' && (
               <div className="space-y-4">
-                {question.code_snippet && (
-                  <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-                    <pre className="text-sm">
-                      <code>{question.code_snippet}</code>
-                    </pre>
+                {question.code_snippet && question.blanks && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fill in the blanks in the code:
+                    </label>
+                    <CodeWithBlanks
+                      codeSnippet={question.code_snippet}
+                      blanks={question.blanks}
+                      userAnswers={
+                        typeof answers[question.id] === 'object' 
+                          ? answers[question.id] as Record<string, string>
+                          : {}
+                      }
+                      onChange={(blankAnswers) => {
+                        handleAnswerChange(question.id, blankAnswers);
+                      }}
+                      showCorrectness={false}
+                    />
                   </div>
                 )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Answer
-                  </label>
-                  <textarea
-                    value={answers[question.id] || ''}
-                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
-                    rows={6}
-                    placeholder="Enter your code or analysis..."
-                  />
-                </div>
               </div>
             )}
 
