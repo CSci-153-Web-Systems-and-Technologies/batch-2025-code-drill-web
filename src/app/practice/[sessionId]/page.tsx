@@ -403,8 +403,8 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
                       {typeof question.essay_requirements === 'object' ? (
                         <>
                           {question.essay_requirements.word_count && (
-                            <p>
-                              <strong>Word Count:</strong> {question.essay_requirements.word_count[0]} - {question.essay_requirements.word_count[1]} words
+                            <p className="font-semibold text-blue-800">
+                              <strong>Word Count:</strong> {question.essay_requirements.word_count[0]} - {question.essay_requirements.word_count[1]} words (strictly enforced)
                             </p>
                           )}
                           {question.essay_requirements.key_concepts && question.essay_requirements.key_concepts.length > 0 && (
@@ -425,16 +425,64 @@ export default function PracticeSessionPage({ params }: PracticeSessionPageProps
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Essay
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Your Essay
+                    </label>
+                    {(() => {
+                      const essayText = (answers[question.id] || '') as string;
+                      const wordCount = essayText.trim().split(/\s+/).filter(w => w.length > 0).length;
+                      const requirements = question.essay_requirements;
+                      let minWords = 0;
+                      let maxWords = Infinity;
+                      
+                      if (typeof requirements === 'object' && requirements.word_count) {
+                        minWords = requirements.word_count[0];
+                        maxWords = requirements.word_count[1];
+                      }
+                      
+                      const isUnderMin = wordCount < minWords && wordCount > 0;
+                      const isOverMax = wordCount > maxWords;
+                      const isValid = wordCount >= minWords && wordCount <= maxWords;
+                      
+                      return (
+                        <span className={`text-sm font-medium ${
+                          isValid ? 'text-green-600' : 
+                          isOverMax || isUnderMin ? 'text-red-600' : 
+                          'text-gray-500'
+                        }`}>
+                          {wordCount} / {minWords}-{maxWords} words
+                          {isOverMax && ' (exceeds limit!)'}
+                          {isUnderMin && ' (too short)'}
+                          {isValid && ' ✓'}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   <textarea
                     value={answers[question.id] || ''}
-                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                    onChange={(e) => {
+                      const text = e.target.value;
+                      const wordCount = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+                      const requirements = question.essay_requirements;
+                      let maxWords = Infinity;
+                      
+                      if (typeof requirements === 'object' && requirements.word_count) {
+                        maxWords = requirements.word_count[1];
+                      }
+                      
+                      // Enforce max word limit strictly
+                      if (wordCount <= maxWords || text.length < (answers[question.id] as string || '').length) {
+                        handleAnswerChange(question.id, text);
+                      }
+                    }}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={12}
                     placeholder="Write your essay here..."
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 The word limit is strictly enforced - you cannot exceed the maximum word count
+                  </p>
                 </div>
                 {question.essay_structure_guide && (
                   <div className="text-sm text-gray-600 bg-purple-50 p-3 rounded">

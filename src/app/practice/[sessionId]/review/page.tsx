@@ -297,6 +297,38 @@ export default function SessionReviewPage({ params }: ReviewPageProps) {
                         </div>
                       </div>
                     )}
+                    
+                    {/* Show user's essay answer */}
+                    {item.user_answer && typeof item.user_answer === 'string' && (
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-300">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-gray-800">Your Essay Answer:</h4>
+                          {(() => {
+                            const wordCount = (item.user_answer as string).trim().split(/\s+/).filter(w => w.length > 0).length;
+                            const requirements = question.essay_requirements;
+                            let minWords = 0;
+                            let maxWords = Infinity;
+                            
+                            if (typeof requirements === 'object' && requirements.word_count) {
+                              minWords = requirements.word_count[0];
+                              maxWords = requirements.word_count[1];
+                            }
+                            
+                            const isValid = wordCount >= minWords && wordCount <= maxWords;
+                            
+                            return (
+                              <span className={`text-sm font-medium ${isValid ? 'text-green-600' : 'text-orange-600'}`}>
+                                {wordCount} words {isValid ? '✓' : '(outside range)'}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div className="prose max-w-none">
+                          <p className="text-gray-700 whitespace-pre-wrap">{item.user_answer as string}</p>
+                        </div>
+                      </div>
+                    )}
+                    
                     {question.essay_structure_guide && (
                       <div className="bg-purple-50 p-4 rounded-lg">
                         <h4 className="font-medium text-purple-800 mb-2">Structure Guide:</h4>
