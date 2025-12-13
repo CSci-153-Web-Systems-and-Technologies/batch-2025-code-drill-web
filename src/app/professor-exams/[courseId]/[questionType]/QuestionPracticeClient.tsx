@@ -206,7 +206,12 @@ export default function QuestionPracticeClient({ courseId, questionType }: Props
         return outputAnswer.trim().length > 0;
       
       case 'essay':
-        return essayAnswer.trim().length > 0;
+        const wordCount = essayAnswer.trim().split(/\s+/).filter(word => word.length > 0).length;
+        const requirements = currentQuestion.essay_requirements;
+        if (!requirements) return essayAnswer.trim().length > 0;
+        
+        const [minWords, maxWords] = requirements.word_count;
+        return wordCount >= minWords && wordCount <= maxWords;
       
       case 'multiple_choice':
         return selectedChoice.length > 0;
@@ -341,6 +346,11 @@ export default function QuestionPracticeClient({ courseId, questionType }: Props
         );
 
       case 'essay':
+        const wordCount = essayAnswer.trim().split(/\s+/).filter(word => word.length > 0).length;
+        const requirements = currentQuestion.essay_requirements;
+        const [minWords, maxWords] = requirements?.word_count || [0, 10000];
+        const isWordCountValid = wordCount >= minWords && wordCount <= maxWords;
+        
         return (
           <div className="mb-6">
             <label className="block text-gray-400 font-semibold mb-2">
@@ -353,9 +363,29 @@ export default function QuestionPracticeClient({ courseId, questionType }: Props
               rows={8}
               placeholder="Write your answer here..."
             />
-            <p className="text-sm text-gray-500 mt-2">
-              This answer will be manually graded by your professor.
-            </p>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-sm text-gray-500">
+                This answer will be manually graded by your professor.
+              </p>
+              <div className="flex items-center gap-4">
+                <span className={`text-sm font-medium ${
+                  isWordCountValid 
+                    ? 'text-green-400' 
+                    : wordCount < minWords 
+                      ? 'text-yellow-400' 
+                      : 'text-red-400'
+                }`}>
+                  {wordCount} / {minWords}-{maxWords} words
+                </span>
+                {!isWordCountValid && (
+                  <span className="text-xs text-gray-400">
+                    {wordCount < minWords 
+                      ? `Need ${minWords - wordCount} more` 
+                      : `${wordCount - maxWords} over limit`}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         );
 
