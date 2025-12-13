@@ -61,6 +61,11 @@ export async function getLeaderboardData(
     return [];
   }
 
+  console.log('Leaderboard data fetched:', {
+    count: data?.length || 0,
+    data: data,
+  });
+
   return data || [];
 }
 
