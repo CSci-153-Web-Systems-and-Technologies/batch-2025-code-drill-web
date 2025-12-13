@@ -1,11 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { X, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import Button from '@/components/ui/Button';
 
 interface MultipleChoiceOption {
   id: string;
@@ -70,53 +66,61 @@ export function MultipleChoiceForm({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label>Answer Choices</Label>
+        <label className="block text-sm font-medium text-gray-700">Answer Choices</label>
         <Button
           type="button"
-          variant="outline"
-          size="sm"
           onClick={handleAddOption}
           disabled={options.length >= 10}
+          className="text-sm"
         >
-          <Plus className="h-4 w-4 mr-1" />
+          <svg className="h-4 w-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
           Add Choice
         </Button>
       </div>
 
-      <RadioGroup value={selectedCorrect} onValueChange={handleCorrectAnswerChange}>
-        <div className="space-y-3">
-          {options.map((option, index) => (
-            <div key={option.id} className="flex items-start gap-3">
-              <div className="flex items-center space-x-2 pt-2">
-                <RadioGroupItem value={option.id} id={`option-${option.id}`} />
-              </div>
-              
-              <div className="flex-1">
-                <Input
-                  placeholder={`Choice ${String.fromCharCode(65 + index)}`}
-                  value={option.text}
-                  onChange={(e) => handleOptionTextChange(option.id, e.target.value)}
-                  className="w-full"
-                />
-              </div>
-
-              {options.length > 2 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveOption(option.id)}
-                  className="mt-1"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
+      <div className="space-y-3">
+        {options.map((option, index) => (
+          <div key={option.id} className="flex items-start gap-3">
+            <div className="flex items-center space-x-2 pt-2">
+              <input
+                type="radio"
+                name="correct-answer"
+                value={option.id}
+                checked={selectedCorrect === option.id}
+                onChange={() => handleCorrectAnswerChange(option.id)}
+                id={`option-${option.id}`}
+                className="h-4 w-4"
+              />
             </div>
-          ))}
-        </div>
-      </RadioGroup>
+            
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder={`Choice ${String.fromCharCode(65 + index)}`}
+                value={option.text}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleOptionTextChange(option.id, e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-      <p className="text-sm text-muted-foreground">
+            {options.length > 2 && (
+              <button
+                type="button"
+                onClick={() => handleRemoveOption(option.id)}
+                className="mt-1 p-2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <p className="text-sm text-gray-500">
         Select the radio button next to the correct answer. Min 2 choices, max 10.
       </p>
     </div>

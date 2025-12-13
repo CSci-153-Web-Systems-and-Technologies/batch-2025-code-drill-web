@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import Button from '@/components/ui/Button';
 
 interface MultipleChoiceOption {
   id: string;
@@ -59,41 +57,40 @@ export function MultipleChoiceAnswer({
 
   return (
     <div className="space-y-4">
-      <RadioGroup 
-        value={selectedChoice} 
-        onValueChange={setSelectedChoice}
-        disabled={isSubmitted}
-      >
-        <div className="space-y-3">
-          {choices.map((choice, index) => (
-            <div 
-              key={choice.id}
-              className={`flex items-center space-x-3 p-3 rounded-lg border ${getChoiceClassName(choice.id)}`}
+      <div className="space-y-3">
+        {choices.map((choice, index) => (
+          <div 
+            key={choice.id}
+            className={`flex items-center space-x-3 p-3 rounded-lg border ${getChoiceClassName(choice.id)}`}
+          >
+            <input
+              type="radio"
+              name="multiple-choice"
+              value={choice.id}
+              checked={selectedChoice === choice.id}
+              onChange={() => setSelectedChoice(choice.id)}
+              disabled={isSubmitted}
+              id={`choice-${choice.id}`}
+              className="h-4 w-4"
+            />
+            <label 
+              htmlFor={`choice-${choice.id}`} 
+              className="flex-1 cursor-pointer font-normal"
             >
-              <RadioGroupItem 
-                value={choice.id} 
-                id={`choice-${choice.id}`}
-                disabled={isSubmitted}
-              />
-              <Label 
-                htmlFor={`choice-${choice.id}`} 
-                className="flex-1 cursor-pointer font-normal"
-              >
-                <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
-                {choice.text}
-              </Label>
-              
-              {showFeedback && choice.id === correctAnswer && (
-                <span className="text-green-400 text-sm font-medium">✓ Correct</span>
-              )}
-              
-              {showFeedback && isSubmitted && choice.id === selectedChoice && !isCorrect && (
-                <span className="text-red-400 text-sm font-medium">✗ Incorrect</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </RadioGroup>
+              <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
+              {choice.text}
+            </label>
+            
+            {showFeedback && choice.id === correctAnswer && (
+              <span className="text-green-400 text-sm font-medium">✓ Correct</span>
+            )}
+            
+            {showFeedback && isSubmitted && choice.id === selectedChoice && !isCorrect && (
+              <span className="text-red-400 text-sm font-medium">✗ Incorrect</span>
+            )}
+          </div>
+        ))}
+      </div>
 
       {!isSubmitted && (
         <Button
