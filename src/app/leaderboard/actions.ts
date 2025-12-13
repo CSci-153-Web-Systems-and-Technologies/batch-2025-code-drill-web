@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 export interface LeaderboardEntry {
   user_id: string;
   rank: number;
-  full_name: string;
+  name: string;
   email: string;
   total_points: number;
   problems_solved: number;
@@ -321,7 +321,7 @@ export async function exportLeaderboardCSV(
 
   const rows = leaderboard.map((entry) => [
     entry.rank,
-    entry.full_name,
+    entry.name,
     entry.email,
     entry.total_points,
     entry.problems_solved,

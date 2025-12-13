@@ -102,7 +102,7 @@ BEGIN
       ROW_NUMBER() OVER (ORDER BY u.total_points DESC, u.problems_solved DESC, u.avg_score DESC) as user_rank
     FROM users u
     WHERE u.leaderboard_visible = true
-      AND u.role = 'student'::VARCHAR(50)
+      AND u.role = 'student'::user_role
       AND (p_course_id IS NULL OR EXISTS (
         SELECT 1 FROM user_exam_answers uea
         JOIN exam_questions eq ON uea.exam_question_id = eq.id
@@ -150,7 +150,7 @@ CREATE OR REPLACE FUNCTION get_leaderboard(
 RETURNS TABLE (
   user_id UUID,
   rank BIGINT,
-  full_name VARCHAR,
+  name VARCHAR,
   email VARCHAR,
   total_points INTEGER,
   problems_solved INTEGER,
@@ -166,7 +166,7 @@ BEGIN
   WITH ranked_users AS (
     SELECT 
       u.id,
-      u.full_name,
+      u.name,
       u.email,
       u.total_points,
       u.problems_solved,
@@ -175,7 +175,7 @@ BEGIN
       ROW_NUMBER() OVER (ORDER BY u.total_points DESC, u.problems_solved DESC, u.avg_score DESC) as user_rank
     FROM users u
     WHERE u.leaderboard_visible = true
-      AND u.role = 'student'::VARCHAR(50)
+      AND u.role = 'student'::user_role
       AND (p_course_id IS NULL OR EXISTS (
         SELECT 1 FROM user_exam_answers uea
         JOIN exam_questions eq ON uea.exam_question_id = eq.id
@@ -216,7 +216,7 @@ BEGIN
   SELECT 
     ru.id as user_id,
     ru.user_rank,
-    ru.full_name,
+    ru.name,
     ru.email,
     ru.total_points,
     ru.problems_solved,
@@ -289,7 +289,7 @@ BEGIN
       ROW_NUMBER() OVER (ORDER BY u.total_points DESC, u.problems_solved DESC, u.avg_score DESC) as user_rank
     FROM users u
     WHERE u.leaderboard_visible = true
-      AND u.role = 'student'::VARCHAR(50)
+      AND u.role = 'student'::user_role
       AND (p_course_id IS NULL OR EXISTS (
         SELECT 1 FROM user_exam_answers uea
         JOIN exam_questions eq ON uea.exam_question_id = eq.id

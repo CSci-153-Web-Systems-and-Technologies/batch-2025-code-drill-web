@@ -88,7 +88,7 @@ export default function LeaderboardTable({
                   {/* Student */}
                   <td className="px-4 py-4">
                     <div>
-                      <div className="font-medium">{entry.full_name}</div>
+                      <div className="font-medium">{entry.name}</div>
                       <div className="text-sm text-muted-foreground">
                         {entry.email}
                       </div>
