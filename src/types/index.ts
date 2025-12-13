@@ -11,6 +11,7 @@ export interface User {
   currentStreak: number;
   avgScore: number;
   role: UserRole;
+  leaderboard_visible?: boolean;
 }
 
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
