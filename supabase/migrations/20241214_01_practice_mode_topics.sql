@@ -6,6 +6,19 @@
 -- 1. MODIFY EXAM QUESTIONS TABLE
 -- ============================================================================
 
+-- Add template_id if it doesn't exist (for backwards compatibility)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'exam_questions' AND column_name = 'template_id'
+  ) THEN
+    ALTER TABLE exam_questions ADD COLUMN template_id UUID;
+    ALTER TABLE exam_questions ADD CONSTRAINT fk_exam_questions_template 
+      FOREIGN KEY (template_id) REFERENCES exam_templates(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
 -- Make template_id and question_number nullable for standalone questions
 ALTER TABLE exam_questions ALTER COLUMN template_id DROP NOT NULL;
 ALTER TABLE exam_questions ALTER COLUMN question_number DROP NOT NULL;
@@ -15,8 +28,18 @@ ALTER TABLE exam_questions DROP CONSTRAINT IF EXISTS exam_questions_template_id_
 
 -- Add course_id column for standalone questions (questions not tied to templates)
 ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS course_id UUID;
-ALTER TABLE exam_questions ADD CONSTRAINT fk_exam_questions_course 
-  FOREIGN KEY (course_id) REFERENCES professor_courses(id) ON DELETE CASCADE;
+
+-- Add foreign key constraint for course_id
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'fk_exam_questions_course'
+  ) THEN
+    ALTER TABLE exam_questions ADD CONSTRAINT fk_exam_questions_course 
+      FOREIGN KEY (course_id) REFERENCES professor_courses(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
 -- Add constraint: either template_id or course_id must be set (but not both for standalone)
 ALTER TABLE exam_questions DROP CONSTRAINT IF EXISTS exam_questions_source_check;
@@ -28,8 +51,16 @@ ALTER TABLE exam_questions ADD CONSTRAINT exam_questions_source_check
 
 -- Add additional columns for new question types
 ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS question_type_category TEXT;
-ALTER TABLE exam_questions ADD CONSTRAINT exam_questions_type_category_check
-  CHECK (question_type_category IN ('code_analysis', 'output_tracing', 'essay', 'multiple_choice', 'true_false'));
+
+-- Drop and recreate CHECK constraint to avoid conflicts
+DO $$
+BEGIN
+  ALTER TABLE exam_questions DROP CONSTRAINT IF EXISTS exam_questions_type_category_check;
+  ALTER TABLE exam_questions ADD CONSTRAINT exam_questions_type_category_check
+    CHECK (question_type_category IN ('code_analysis', 'output_tracing', 'essay', 'multiple_choice', 'true_false'));
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS choices JSONB;
 ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS correct_answer TEXT;
