@@ -108,7 +108,14 @@ The platform uses Supabase with PostgreSQL. Key tables include:
 - `challenges` - Challenge system
 - `skills` - Skills tracking and progression
 - `announcements` - Course announcements
-- `rank_snapshots` - Historical rank trac in Supabase SQL Editor:
+- `rank_snapshots` - Historical rank tracking (30 days)
+- `achievement_badges` - Badge definitions with emoji icons
+- `user_badges` - User-earned achievement badges
+- `daily_activity` - Streak tracking with grace period support
+
+### Running Migrations
+
+Execute migrations in chronological order in Supabase SQL Editor:
 
 1. **Core System** (Run first):
 ```sql
@@ -131,7 +138,38 @@ The platform uses Supabase with PostgreSQL. Key tables include:
 20241212_announcements.sql
 ```
 
-2. **New│   └── leaderboard/    # Leaderboard CSV export
+2. **New Features** (December 2024 release):
+```sql
+-- Question type expansion
+20241214_extend_question_types.sql
+
+-- Template removal (breaking change)
+20241214_remove_exam_templates.sql
+
+-- Versioning fixes
+20241214_fix_versioning_trigger.sql
+
+-- Essay grading system
+20241214_essay_submission_grading.sql
+
+-- Leaderboard system (run last)
+20241214_leaderboard_system.sql
+```
+
+**Important**: The leaderboard migration includes:
+- 3 new tables: `rank_snapshots`, `achievement_badges`, `user_badges`
+- 4 RPC functions with `SECURITY DEFINER` to bypass RLS
+- Achievement badge seeding
+- Leaderboard visibility column for users
+
+## Project Structure
+
+```
+├── src/
+│   ├── app/                    # Next.js app router pages
+│   │   ├── admin/              # Admin/professor pages
+│   │   ├── api/                # API routes
+│   │   │   └── leaderboard/    # Leaderboard CSV export
 │   │   ├── auth/               # Authentication pages
 │   │   ├── challenges/         # Challenge system
 │   │   ├── leaderboard/        # Global leaderboard & rankings
@@ -192,7 +230,19 @@ The platform uses Supabase with PostgreSQL. Key tables include:
 │   ├── utils/
 │   │   └── helpers.ts          # Utility functions
 │   └── styles/
-│   🏆 Leaderboard System
+│       └── globals.css         # Global styles + Tailwind
+├── supabase/
+│   └── migrations/             # Database migrations (run in order)
+├── public/                     # Static assets
+│   ├── fonts/
+│   ├── icons/
+│   └── images/
+└── tailwind.config.ts          # Tailwind + custom animations
+```
+
+## Key Features Implementation
+
+### 🏆 Leaderboard System
 **Global competitive ranking with achievement badges:**
 - **Real-time Rankings**: Students ranked by total points, problems solved, and avg score
 - **Achievement Badges**: 4 auto-awarded emoji badges based on performance milestones
