@@ -8,6 +8,11 @@
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS leaderboard_visible BOOLEAN DEFAULT true;
 
+-- Set leaderboard_visible to true for all existing users
+UPDATE users
+SET leaderboard_visible = true
+WHERE leaderboard_visible IS NULL;
+
 -- Create rank_snapshots table for historical rank tracking
 CREATE TABLE IF NOT EXISTS rank_snapshots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -145,7 +150,7 @@ RETURNS TABLE (
   user_id UUID,
   rank BIGINT,
   name TEXT,
-  email VARCHAR,
+  email TEXT,
   total_points INTEGER,
   problems_solved INTEGER,
   avg_score INTEGER,
