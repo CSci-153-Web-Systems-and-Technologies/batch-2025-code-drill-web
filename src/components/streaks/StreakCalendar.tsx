@@ -25,11 +25,11 @@ export function StreakCalendar() {
   if (loading) {
     return (
       <div className="w-full">
-        <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+        <div className="space-y-3">
+          <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-1/4 animate-shimmer bg-[length:1000px_100%]"></div>
           <div className="grid grid-cols-7 gap-2">
             {Array.from({ length: 28 }).map((_, i) => (
-              <div key={i} className="aspect-square bg-gray-200 rounded"></div>
+              <div key={i} className="aspect-square bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-shimmer bg-[length:1000px_100%]"></div>
             ))}
           </div>
         </div>
@@ -68,12 +68,13 @@ export function StreakCalendar() {
               key={day.date}
               className={`
                 aspect-square rounded-md flex items-center justify-center text-xs font-medium
-                transition-all duration-200 hover:scale-110
+                transition-all duration-200 hover:scale-110 cursor-default
+                touch-manipulation min-h-[44px] sm:min-h-0
                 ${day.active 
                   ? 'bg-green-500 text-white shadow-md' 
                   : 'bg-gray-100 text-gray-400'
                 }
-                ${isToday ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+                ${isToday ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg shadow-blue-500/50 animate-glow-pulse' : ''}
               `}
               title={`${day.date}${day.active ? ' - Active' : ' - No activity'}${isToday ? ' (Today)' : ''}`}
             >
