@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Container from '@/components/shared/Container';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import CodeWithBlanks from '@/components/practice/CodeWithBlanks';
 import { createClient } from '@/lib/supabase/client';
 import type { ExamQuestion } from '@/types/professor-exam';
 
@@ -201,7 +202,34 @@ export default function SessionReviewPage({ params }: ReviewPageProps) {
                 </div>
 
                 {/* Show code snippet if applicable */}
-                {question.code_snippet && (
+                {question.code_snippet && question.question_type_category === 'code_analysis' && question.blanks && (
+                  <div className="mb-4">
+                    <h4 className="font-medium mb-2">Your Answer (with auto-grading):</h4>
+                    <CodeWithBlanks
+                      codeSnippet={question.code_snippet}
+                      blanks={question.blanks}
+                      userAnswers={
+                        typeof item.user_answer === 'object' && item.user_answer
+                          ? item.user_answer as Record<string, string>
+                          : {}
+                      }
+                      onChange={() => {}} // Read-only in review mode
+                      showCorrectness={true} // Show auto-grading
+                    />
+                    <div className="mt-4 bg-green-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-green-800 mb-2">Correct Answers:</h4>
+                      <div className="text-green-700 text-sm space-y-1">
+                        {Object.entries(question.blanks).map(([key, value]) => (
+                          <p key={key}>
+                            <strong>Blank {key}:</strong> <code className="bg-green-100 px-2 py-1 rounded">{value}</code>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {question.code_snippet && question.question_type_category !== 'code_analysis' && (
                   <div className="mb-4 bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
                     <pre className="text-sm">
                       <code>{question.code_snippet}</code>
