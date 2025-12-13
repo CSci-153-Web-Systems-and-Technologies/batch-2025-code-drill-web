@@ -7,6 +7,9 @@ import Button from '@/components/ui/Button';
 import FillInBlanksForm from './question-types/FillInBlanksForm';
 import OutputTracingForm from './question-types/OutputTracingForm';
 import EssayForm from './question-types/EssayForm';
+import { MultipleChoiceForm } from './question-types/MultipleChoiceForm';
+import { TrueFalseForm } from './question-types/TrueFalseForm';
+import { IdentificationForm } from './question-types/IdentificationForm';
 
 interface QuestionFormProps {
   initialData?: Partial<Question> & { id?: string; template_id?: string };
@@ -40,6 +43,11 @@ export default function QuestionForm({
     essay_context: initialData?.essay_context || null,
     essay_requirements: initialData?.essay_requirements || null,
     essay_structure_guide: initialData?.essay_structure_guide || null,
+    
+    // New question type fields
+    choices: initialData?.choices || null,
+    correct_answer: initialData?.correct_answer || null,
+    correct_boolean: initialData?.correct_boolean || null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -144,6 +152,9 @@ export default function QuestionForm({
               <option value="fill_blanks">Fill in the Blanks (Code Analysis)</option>
               <option value="trace_output">Trace Output</option>
               <option value="essay">Essay</option>
+              <option value="multiple_choice">Multiple Choice</option>
+              <option value="true_false">True/False</option>
+              <option value="identification">Identification</option>
             </select>
             {errors.question_type && <p className="text-red-400 text-sm mt-1">{errors.question_type}</p>}
           </div>
@@ -251,6 +262,80 @@ export default function QuestionForm({
           onChange={handleTypeSpecificChange}
           errors={errors}
         />
+      )}
+
+      {formData.question_type === 'multiple_choice' && (
+        <Card>
+          <h2 className="text-xl font-semibold text-white mb-4">Multiple Choice Options</h2>
+          <MultipleChoiceForm
+            choices={formData.choices || undefined}
+            correctAnswer={formData.correct_answer || undefined}
+            onChange={(choices, correctAnswer) => {
+              handleTypeSpecificChange({
+                choices,
+                correct_answer: correctAnswer,
+                // Clear other type-specific fields
+                blanks: null,
+                expected_output: null,
+                output_tips: null,
+                essay_context: null,
+                essay_requirements: null,
+                essay_structure_guide: null,
+                correct_boolean: null,
+              });
+            }}
+          />
+          {errors.choices && <p className="text-red-400 text-sm mt-2">{errors.choices}</p>}
+          {errors.correct_answer && <p className="text-red-400 text-sm mt-2">{errors.correct_answer}</p>}
+        </Card>
+      )}
+
+      {formData.question_type === 'true_false' && (
+        <Card>
+          <h2 className="text-xl font-semibold text-white mb-4">True/False Answer</h2>
+          <TrueFalseForm
+            correctAnswer={formData.correct_boolean !== null ? formData.correct_boolean : undefined}
+            onChange={(correctBoolean) => {
+              handleTypeSpecificChange({
+                correct_boolean: correctBoolean,
+                // Clear other type-specific fields
+                blanks: null,
+                expected_output: null,
+                output_tips: null,
+                essay_context: null,
+                essay_requirements: null,
+                essay_structure_guide: null,
+                choices: null,
+                correct_answer: null,
+              });
+            }}
+          />
+          {errors.correct_boolean && <p className="text-red-400 text-sm mt-2">{errors.correct_boolean}</p>}
+        </Card>
+      )}
+
+      {formData.question_type === 'identification' && (
+        <Card>
+          <h2 className="text-xl font-semibold text-white mb-4">Identification Answer</h2>
+          <IdentificationForm
+            correctAnswer={formData.correct_answer || undefined}
+            onChange={(correctAnswer) => {
+              handleTypeSpecificChange({
+                correct_answer: correctAnswer,
+                // Clear other type-specific fields
+                blanks: null,
+                expected_output: null,
+                output_tips: null,
+                essay_context: null,
+                essay_requirements: null,
+                essay_structure_guide: null,
+                choices: null,
+                correct_boolean: null,
+              });
+            }}
+          />
+          {errors.correct_answer && <p className="text-red-400 text-sm mt-2">{errors.correct_answer}</p>}
+        </Card>
       )}
 
       {/* Form Actions */}
