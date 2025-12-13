@@ -510,6 +510,90 @@ export async function autoSaveEssay(
   }
 }
 
+/**
+ * Submit multiple choice answer
+ */
+export async function submitMultipleChoiceAnswer(
+  questionId: string,
+  progressId: string,
+  selectedChoice: string,
+  timeSpent: number
+): Promise<AnswerCheckResult> {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase.rpc('check_multiple_choice_answer', {
+    p_user_id: user.id,
+    p_question_id: questionId,
+    p_progress_id: progressId,
+    p_selected_choice: selectedChoice,
+    p_time_spent: timeSpent,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Submit true/false answer
+ */
+export async function submitTrueFalseAnswer(
+  questionId: string,
+  progressId: string,
+  answerBoolean: boolean,
+  timeSpent: number
+): Promise<AnswerCheckResult> {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase.rpc('check_true_false_answer', {
+    p_user_id: user.id,
+    p_question_id: questionId,
+    p_progress_id: progressId,
+    p_answer_boolean: answerBoolean,
+    p_time_spent: timeSpent,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Submit identification answer (case-insensitive)
+ */
+export async function submitIdentificationAnswer(
+  questionId: string,
+  progressId: string,
+  identificationAnswer: string,
+  timeSpent: number
+): Promise<AnswerCheckResult> {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase.rpc('check_identification_answer', {
+    p_user_id: user.id,
+    p_question_id: questionId,
+    p_progress_id: progressId,
+    p_identification_answer: identificationAnswer,
+    p_time_spent: timeSpent,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
 // ============================================================================
 // HINT TRACKING
 // ============================================================================
@@ -1013,7 +1097,7 @@ export async function createQuestion(data: {
   template_id: string;
   title: string;
   question_text: string;
-  question_type: 'fill_blanks' | 'trace_output' | 'essay';
+  question_type: 'fill_blanks' | 'trace_output' | 'essay' | 'multiple_choice' | 'true_false' | 'identification';
   difficulty: 'Easy' | 'Medium' | 'Hard';
   points: number;
   code_snippet?: string | null;
@@ -1023,6 +1107,9 @@ export async function createQuestion(data: {
   essay_context?: string | null;
   essay_requirements?: any | null;
   essay_structure_guide?: string | null;
+  choices?: Array<{ id: string; text: string }> | null;
+  correct_answer?: string | null;
+  correct_boolean?: boolean | null;
   hints?: string[];
   time_estimate_minutes?: number | null;
   question_number?: number;
@@ -1067,6 +1154,9 @@ export async function createQuestion(data: {
       essay_context: data.essay_context || null,
       essay_requirements: data.essay_requirements || null,
       essay_structure_guide: data.essay_structure_guide || null,
+      choices: data.choices || null,
+      correct_answer: data.correct_answer || null,
+      correct_boolean: data.correct_boolean || null,
       hints: data.hints || null,
       time_estimate_minutes: data.time_estimate_minutes || null,
       is_published: false,
@@ -1111,7 +1201,7 @@ export async function updateQuestion(data: {
   question_number?: number;
   title?: string;
   question_text?: string;
-  question_type: 'fill_blanks' | 'trace_output' | 'essay';
+  question_type: 'fill_blanks' | 'trace_output' | 'essay' | 'multiple_choice' | 'true_false' | 'identification';
   difficulty?: 'Easy' | 'Medium' | 'Hard';
   points?: number;
   code_snippet?: string | null;
@@ -1121,6 +1211,9 @@ export async function updateQuestion(data: {
   essay_context?: string | null;
   essay_requirements?: any | null;
   essay_structure_guide?: string | null;
+  choices?: Array<{ id: string; text: string }> | null;
+  correct_answer?: string | null;
+  correct_boolean?: boolean | null;
   hints?: string[];
   time_estimate_minutes?: number | null;
 }) {
@@ -1158,6 +1251,9 @@ export async function updateQuestion(data: {
   if (data.essay_context !== undefined) updateData.essay_context = data.essay_context;
   if (data.essay_requirements !== undefined) updateData.essay_requirements = data.essay_requirements;
   if (data.essay_structure_guide !== undefined) updateData.essay_structure_guide = data.essay_structure_guide;
+  if (data.choices !== undefined) updateData.choices = data.choices;
+  if (data.correct_answer !== undefined) updateData.correct_answer = data.correct_answer;
+  if (data.correct_boolean !== undefined) updateData.correct_boolean = data.correct_boolean;
   if (data.hints !== undefined) updateData.hints = data.hints;
   if (data.time_estimate_minutes !== undefined) updateData.time_estimate_minutes = data.time_estimate_minutes;
   
