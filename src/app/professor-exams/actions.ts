@@ -766,59 +766,13 @@ export async function getQuestionsWithPublishStatus(
 ) {
   const supabase = await createClient();
   
-  // If filtering by courseId, first get all templates for that course
-  if (courseId && !templateId) {
-    const { data: templates } = await supabase
-      .from('exam_templates')
-      .select('id')
-      .eq('course_id', courseId);
-    
-    if (!templates || templates.length === 0) {
-      return [];
-    }
-    
-    const templateIds = templates.map(t => t.id);
-    
-    let query = supabase
-      .from('exam_questions')
-      .select(`
-        *,
-        exam_templates (
-          title,
-          exam_type,
-          course_id
-        ),
-        users!exam_questions_published_by_fkey (
-          name,
-          email
-        )
-      `)
-      .in('template_id', templateIds)
-      .order('question_number');
-    
-    if (publishedOnly) {
-      query = query.eq('is_published', true);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching questions with publish status:', error);
-      return [];
-    }
-    
-    return data;
-  }
-  
-  // Original logic for templateId filtering
   let query = supabase
     .from('exam_questions')
     .select(`
       *,
-      exam_templates (
-        title,
-        exam_type,
-        course_id
+      professor_courses!exam_questions_course_id_fkey (
+        course_code,
+        name
       ),
       users!exam_questions_published_by_fkey (
         name,
@@ -827,8 +781,9 @@ export async function getQuestionsWithPublishStatus(
     `)
     .order('question_number');
 
-  if (templateId) {
-    query = query.eq('template_id', templateId);
+  // Filter by course_id if provided
+  if (courseId) {
+    query = query.eq('course_id', courseId);
   }
 
   if (publishedOnly) {
@@ -840,6 +795,10 @@ export async function getQuestionsWithPublishStatus(
   if (error) {
     console.error('Error fetching questions with publish status:', error);
     return [];
+  }
+
+  return data || [];
+}
   }
 
   return data;
