@@ -105,7 +105,7 @@ BEGIN
       AND u.role = 'student'::user_role
       AND (p_course_id IS NULL OR EXISTS (
         SELECT 1 FROM user_exam_answers uea
-        JOIN exam_questions eq ON uea.exam_question_id = eq.id
+        JOIN exam_questions eq ON uea.question_id = eq.id
         JOIN professor_exams pe ON eq.exam_id = pe.id
         WHERE uea.user_id = u.id AND pe.course_id = p_course_id
       ))
@@ -178,7 +178,7 @@ BEGIN
       AND u.role = 'student'::user_role
       AND (p_course_id IS NULL OR EXISTS (
         SELECT 1 FROM user_exam_answers uea
-        JOIN exam_questions eq ON uea.exam_question_id = eq.id
+        JOIN exam_questions eq ON uea.question_id = eq.id
         JOIN professor_exams pe ON eq.exam_id = pe.id
         WHERE uea.user_id = u.id AND pe.course_id = p_course_id
       ))
@@ -292,7 +292,7 @@ BEGIN
       AND u.role = 'student'::user_role
       AND (p_course_id IS NULL OR EXISTS (
         SELECT 1 FROM user_exam_answers uea
-        JOIN exam_questions eq ON uea.exam_question_id = eq.id
+        JOIN exam_questions eq ON uea.question_id = eq.id
         JOIN professor_exams pe ON eq.exam_id = pe.id
         WHERE uea.user_id = u.id AND pe.course_id = p_course_id
       ))
