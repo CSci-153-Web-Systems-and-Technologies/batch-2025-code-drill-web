@@ -10,6 +10,7 @@ import EssayForm from './question-types/EssayForm';
 import { MultipleChoiceForm } from './question-types/MultipleChoiceForm';
 import { TrueFalseForm } from './question-types/TrueFalseForm';
 import { IdentificationForm } from './question-types/IdentificationForm';
+import TagInput from '@/components/shared/TagInput';
 
 interface QuestionFormProps {
   initialData?: Partial<Question> & { id?: string; course_id?: string; question_type_category?: string };
@@ -35,6 +36,7 @@ export default function QuestionForm({
     points: initialData?.points || 10,
     hints: initialData?.hints || [],
     time_estimate_minutes: initialData?.time_estimate_minutes || 5,
+    tags: (initialData as any)?.tags || [],
     
     // Type-specific fields
     code_snippet: initialData?.code_snippet || null,
@@ -237,6 +239,24 @@ export default function QuestionForm({
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
             />
             {errors.time_estimate_minutes && <p className="text-red-400 text-sm mt-1">{errors.time_estimate_minutes}</p>}
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Tags (Topics)
+            </label>
+            <TagInput
+              courseId={courseId}
+              value={formData.tags}
+              onChange={(tags) => handleBaseFieldChange('tags', tags)}
+              placeholder="Add tags (e.g., loops, arrays, functions)..."
+              maxTags={10}
+              error={errors.tags}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Add tags to help students find this question when practicing specific topics.
+            </p>
           </div>
         </div>
       </Card>
