@@ -30,6 +30,10 @@ BEGIN
   END IF;
 END$$;
 
+-- Drop the versioning trigger BEFORE the DO block to ensure it takes effect
+-- This prevents auth.uid() NULL errors during migration seeding
+DROP TRIGGER IF EXISTS create_question_version_trigger ON exam_questions;
+
 -- Get CS 101 course ID
 DO $$
 DECLARE
@@ -40,10 +44,6 @@ BEGIN
   IF v_course_id IS NULL THEN
     RAISE EXCEPTION 'CS 101 course not found. Please run 20241203_professor_exams.sql first.';
   END IF;
-
-  -- Drop the versioning trigger temporarily during seed to avoid auth.uid() issues
-  -- We drop it entirely because DISABLE doesn't work within the same transaction
-  DROP TRIGGER IF EXISTS create_question_version_trigger ON exam_questions;
 
   -- ========================================================================
   -- LOOPS - CODE ANALYSIS (3 questions)
