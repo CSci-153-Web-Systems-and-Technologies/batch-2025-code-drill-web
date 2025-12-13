@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/types';
 import { updateUserProfileAction } from '@/app/profile/actions';
+import { updateLeaderboardVisibility } from '@/app/leaderboard/actions';
 
 interface EditProfileFormProps {
   user: User;
@@ -12,6 +13,7 @@ interface EditProfileFormProps {
 export function EditProfileForm({ user }: EditProfileFormProps) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
+  const [leaderboardVisible, setLeaderboardVisible] = useState(user.leaderboard_visible ?? true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -22,17 +24,29 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
     setError('');
     setSuccess(false);
 
+    // Update profile
     const result = await updateUserProfileAction(user.id, { name });
 
-    if (result.success) {
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/profile');
-        router.refresh();
-      }, 1500);
-    } else {
+    if (!result.success) {
       setError(result.error || 'Failed to update profile');
+      setLoading(false);
+      return;
     }
+
+    // Update leaderboard visibility
+    const visibilityResult = await updateLeaderboardVisibility(leaderboardVisible);
+
+    if (!visibilityResult.success) {
+      setError(visibilityResult.error || 'Failed to update privacy settings');
+      setLoading(false);
+      return;
+    }
+
+    setSuccess(true);
+    setTimeout(() => {
+      router.push('/profile');
+      router.refresh();
+    }, 1500);
 
     setLoading(false);
   };
@@ -67,6 +81,26 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
           className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
         />
         <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+      </div>
+
+      {/* Leaderboard Privacy Setting */}
+      <div className="mb-6">
+        <label className="flex items-start space-x-3">
+          <input
+            type="checkbox"
+            checked={leaderboardVisible}
+            onChange={(e) => setLeaderboardVisible(e.target.checked)}
+            className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <div className="flex-1">
+            <span className="block text-sm font-medium text-gray-700">
+              🏆 Show me on the leaderboard
+            </span>
+            <p className="text-xs text-gray-500 mt-1">
+              When enabled, you'll appear on public leaderboards. You can still see your own rank and stats even if disabled.
+            </p>
+          </div>
+        </label>
       </div>
 
       {/* Error Message */}

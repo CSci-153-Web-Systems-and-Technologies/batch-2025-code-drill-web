@@ -103,7 +103,7 @@ export default async function Home() {
 
           {/* Right Column - Rank & Challenges */}
           <div className="space-y-6">
-            <RankCard rank={12} />
+            <RankCard />
             <StreakStats />
             <ActiveChallenges />
           </div>
