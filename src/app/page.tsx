@@ -6,7 +6,6 @@ import SkillProgress from '@/components/shared/SkillProgress';
 import RankCard from '@/components/shared/RankCard';
 import { StreakWarning } from '@/components/streaks/StreakWarning';
 import { StreakStats } from '@/components/streaks/StreakStats';
-import { StreakCalendar } from '@/components/streaks/StreakCalendar';
 import ActiveChallenges from '@/components/challenges/ActiveChallenges';
 import { getCurrentUserWithRole } from '@/lib/auth-roles';
 import { getProfessorDashboardStats } from '@/lib/professor-dashboard';
@@ -102,7 +101,6 @@ export default async function Home() {
           <div className="lg:col-span-2 space-y-6">
             <WeeklyGoal current={weeklyProblemsSolved} goal={10} />
             <SkillProgress />
-            <StreakCalendar />
           </div>
 
           {/* Right Column - Rank & Challenges */}
