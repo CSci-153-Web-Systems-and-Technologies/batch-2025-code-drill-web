@@ -139,14 +139,14 @@ export function getStreakEmoji(days: number): string {
 }
 
 /**
- * Calculate streak calendar data for the last 30 days
+ * Calculate streak calendar data for the last year (365 days)
  */
-export async function getStreakCalendar(userId: string): Promise<Array<{ date: string; active: boolean }>> {
+export async function getStreakCalendar(userId: string): Promise<Array<{ date: string; count: number }>> {
   const supabase = await createClient();
 
-  // Get submissions from last 30 days (practice questions answered)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  // Get submissions from last year
+  const oneYearAgo = new Date();
+  oneYearAgo.setDate(oneYearAgo.getDate() - 365);
 
   const { data: practiceQuestions, error } = await supabase
     .from('practice_exam_questions')
@@ -154,33 +154,33 @@ export async function getStreakCalendar(userId: string): Promise<Array<{ date: s
     .eq('practice_sessions.user_id', userId)
     .eq('is_correct', true)
     .not('answered_at', 'is', null)
-    .gte('answered_at', thirtyDaysAgo.toISOString());
+    .gte('answered_at', oneYearAgo.toISOString());
 
   if (error) {
     console.error('Error fetching streak calendar:', error);
     return [];
   }
 
-  // Create map of active dates
-  const activeDates = new Set<string>();
+  // Create map of dates with counts
+  const dateCounts = new Map<string, number>();
   practiceQuestions?.forEach((question) => {
     if (question.answered_at) {
       const date = new Date(question.answered_at);
       const dateString = date.toISOString().split('T')[0];
-      activeDates.add(dateString);
+      dateCounts.set(dateString, (dateCounts.get(dateString) || 0) + 1);
     }
   });
 
-  // Generate calendar data for last 30 days
-  const calendar: Array<{ date: string; active: boolean }> = [];
-  for (let i = 29; i >= 0; i--) {
+  // Generate calendar data for last 365 days
+  const calendar: Array<{ date: string; count: number }> = [];
+  for (let i = 364; i >= 0; i--) {
     const date = new Date();
     date.setDate(date.getDate() - i);
     const dateString = date.toISOString().split('T')[0];
     
     calendar.push({
       date: dateString,
-      active: activeDates.has(dateString),
+      count: dateCounts.get(dateString) || 0,
     });
   }
 
