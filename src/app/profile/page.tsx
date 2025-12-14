@@ -5,7 +5,6 @@ import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { ProfileStats } from '@/components/profile/ProfileStats';
 import { ProfileActivity } from '@/components/profile/ProfileActivity';
 import { ProfessorStats } from '@/components/profile/ProfessorStats';
-import { StreakCalendar } from '@/components/streaks/StreakCalendar';
 import { StreakStats } from '@/components/streaks/StreakStats';
 
 export default async function ProfilePage() {
@@ -32,7 +31,6 @@ export default async function ProfilePage() {
           ) : (
             <>
               <ProfileStats userId={user.id} />
-              <StreakCalendar />
               <ProfileActivity userId={user.id} />
             </>
           )}

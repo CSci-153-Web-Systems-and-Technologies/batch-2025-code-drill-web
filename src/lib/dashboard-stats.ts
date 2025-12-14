@@ -21,7 +21,7 @@ export async function getWeeklyProblemsSolved(userId: string): Promise<number> {
     .select('problem_id')
     .eq('user_id', userId)
     .eq('status', 'Accepted')
-    .gte('created_at', startOfWeek.toISOString());
+    .gte('submitted_at', startOfWeek.toISOString());
   
   if (error) {
     console.error('Error fetching weekly problems:', error);
