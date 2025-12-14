@@ -102,14 +102,14 @@ export function StreakCalendar() {
 
   return (
     <div className="w-full">
-      <div className="mb-3">
+      <div className="mb-2">
         <span className="text-sm font-medium text-gray-700">
           {totalContributions} practice questions solved in the last year
         </span>
       </div>
 
       {/* Month labels */}
-      <div className="flex mb-1 ml-6 text-[10px] text-gray-600">
+      <div className="flex mb-0.5 ml-6 text-[10px] text-gray-600">
         {monthLabels.map((label, index) => (
           <div
             key={index}
