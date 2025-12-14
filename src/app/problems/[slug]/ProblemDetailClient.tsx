@@ -161,29 +161,16 @@ export default function ProblemDetailClient({ problem }: ProblemDetailClientProp
                     dangerouslySetInnerHTML={{
                       __html: problem.description
                         .replace(/\n/g, '<br/>')
-                        .replace(/`([^`]+)`/g, '<code>$1</code>'),
+                        .replace(/`([^`]+)`/g, '<code>$1</code>')
+                        .replace(/^(Description|Submissions|Example \d+:\*\*|Constraints|Tags)$/gm, '')
+                        .replace(/<br\/><br\/>/g, '<br/>')
+                        .trim(),
                     }}
                   />
                 </div>
 
-                {/* Constraints */}
-                {problem.constraints && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Constraints
-                    </h3>
-                    <div
-                      className="text-sm text-gray-700 space-y-1"
-                      dangerouslySetInnerHTML={{
-                        __html: problem.constraints.replace(/\n/g, '<br/>'),
-                      }}
-                    />
-                  </div>
-                )}
-
                 {/* Tags */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Tags</h3>
                   <div className="flex flex-wrap gap-2">
                     {problem.tags.map((tag) => (
                       <span
