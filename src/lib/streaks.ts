@@ -150,10 +150,10 @@ export async function getStreakCalendar(userId: string): Promise<Array<{ date: s
 
   const { data: submissions, error } = await supabase
     .from('submissions')
-    .select('created_at, status')
+    .select('submitted_at, status')
     .eq('user_id', userId)
     .eq('status', 'Accepted')
-    .gte('created_at', thirtyDaysAgo.toISOString());
+    .gte('submitted_at', thirtyDaysAgo.toISOString());
 
   if (error) {
     console.error('Error fetching streak calendar:', error);
@@ -163,7 +163,7 @@ export async function getStreakCalendar(userId: string): Promise<Array<{ date: s
   // Create map of active dates
   const activeDates = new Set<string>();
   submissions?.forEach((submission) => {
-    const date = new Date(submission.created_at);
+    const date = new Date(submission.submitted_at);
     const dateString = date.toISOString().split('T')[0];
     activeDates.add(dateString);
   });
