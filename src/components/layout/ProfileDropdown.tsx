@@ -39,7 +39,6 @@ export default function ProfileDropdown({ user }: ProfileDropdownProps) {
   const profileItems = [
     { name: 'View Profile', href: '/profile', icon: 'user' },
     { name: 'Leaderboard', href: '/leaderboard', icon: 'trophy' },
-    { name: 'Community', href: '/community', icon: 'users' },
   ];
 
   const getIcon = (iconName: string) => {
