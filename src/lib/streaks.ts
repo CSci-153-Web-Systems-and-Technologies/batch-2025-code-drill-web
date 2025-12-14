@@ -144,16 +144,17 @@ export function getStreakEmoji(days: number): string {
 export async function getStreakCalendar(userId: string): Promise<Array<{ date: string; active: boolean }>> {
   const supabase = await createClient();
 
-  // Get submissions from last 30 days
+  // Get submissions from last 30 days (practice questions answered)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const { data: submissions, error } = await supabase
-    .from('submissions')
-    .select('submitted_at, status')
-    .eq('user_id', userId)
-    .eq('status', 'Accepted')
-    .gte('submitted_at', thirtyDaysAgo.toISOString());
+  const { data: practiceQuestions, error } = await supabase
+    .from('practice_exam_questions')
+    .select('answered_at, is_correct, practice_sessions!inner(user_id)')
+    .eq('practice_sessions.user_id', userId)
+    .eq('is_correct', true)
+    .not('answered_at', 'is', null)
+    .gte('answered_at', thirtyDaysAgo.toISOString());
 
   if (error) {
     console.error('Error fetching streak calendar:', error);
@@ -162,10 +163,12 @@ export async function getStreakCalendar(userId: string): Promise<Array<{ date: s
 
   // Create map of active dates
   const activeDates = new Set<string>();
-  submissions?.forEach((submission) => {
-    const date = new Date(submission.submitted_at);
-    const dateString = date.toISOString().split('T')[0];
-    activeDates.add(dateString);
+  practiceQuestions?.forEach((question) => {
+    if (question.answered_at) {
+      const date = new Date(question.answered_at);
+      const dateString = date.toISOString().split('T')[0];
+      activeDates.add(dateString);
+    }
   });
 
   // Generate calendar data for last 30 days
