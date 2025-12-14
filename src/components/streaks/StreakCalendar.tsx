@@ -68,11 +68,8 @@ export function StreakCalendar() {
     }
   });
 
-  // Add remaining days to last week
+  // Add remaining days to last week (but don't pad with empty future dates)
   if (currentWeek.length > 0) {
-    while (currentWeek.length < 7) {
-      currentWeek.push({ date: '', count: -1 });
-    }
     weeks.push(currentWeek);
   }
 
