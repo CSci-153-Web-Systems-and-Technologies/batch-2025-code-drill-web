@@ -34,29 +34,10 @@ BEGIN
       u.problems_solved,
       u.avg_score,
       u.current_streak,
-      ROW_NUMBER() OVER (
-        PARTITION BY u.id 
-        ORDER BY u.total_points DESC, u.problems_solved DESC, u.avg_score DESC
-      ) as row_num,
-      ROW_NUMBER() OVER (
-        ORDER BY u.total_points DESC, u.problems_solved DESC, u.avg_score DESC
-      ) as user_rank
+      ROW_NUMBER() OVER (ORDER BY u.total_points DESC, u.problems_solved DESC, u.avg_score DESC) as user_rank
     FROM users u
-    WHERE u.leaderboard_visible = true
+    WHERE (u.leaderboard_visible = true OR u.leaderboard_visible IS NULL)
       AND u.role = 'student'::user_role
-  ),
-  deduplicated_users AS (
-    SELECT 
-      id,
-      name,
-      email,
-      total_points,
-      problems_solved,
-      avg_score,
-      current_streak,
-      user_rank
-    FROM ranked_users
-    WHERE row_num = 1
   ),
   previous_ranks AS (
     SELECT DISTINCT ON (rs.user_id)
@@ -77,40 +58,35 @@ BEGIN
     SELECT 
       ub.user_id,
       jsonb_agg(
-        DISTINCT jsonb_build_object(
+        jsonb_build_object(
           'name', ab.name,
           'emoji', ab.emoji,
           'description', ab.description,
           'earned_at', ub.earned_at
-        ) ORDER BY jsonb_build_object(
-          'name', ab.name,
-          'emoji', ab.emoji,
-          'description', ab.description,
-          'earned_at', ub.earned_at
-        ) DESC
+        ) ORDER BY ub.earned_at DESC
       ) as user_badges
     FROM user_badges ub
     JOIN achievement_badges ab ON ub.badge_id = ab.id
     GROUP BY ub.user_id
   )
-  SELECT 
-    du.id as user_id,
-    du.user_rank,
-    du.name,
-    du.email,
-    du.total_points,
-    du.problems_solved,
-    du.avg_score,
-    du.current_streak,
+  SELECT DISTINCT
+    ru.id as user_id,
+    ru.user_rank,
+    ru.name,
+    ru.email,
+    ru.total_points,
+    ru.problems_solved,
+    ru.avg_score,
+    ru.current_streak,
     CASE 
       WHEN pr.prev_rank IS NULL THEN 0
-      ELSE (pr.prev_rank - du.user_rank)::INTEGER
+      ELSE (pr.prev_rank - ru.user_rank)::INTEGER
     END as rank_change,
     COALESCE(ubl.user_badges, '[]'::jsonb) as badges
-  FROM deduplicated_users du
-  LEFT JOIN previous_ranks pr ON du.id = pr.user_id
-  LEFT JOIN user_badge_list ubl ON du.id = ubl.user_id
-  ORDER BY du.user_rank
+  FROM ranked_users ru
+  LEFT JOIN previous_ranks pr ON ru.id = pr.user_id
+  LEFT JOIN user_badge_list ubl ON ru.id = ubl.user_id
+  ORDER BY ru.user_rank
   LIMIT p_limit
   OFFSET p_offset;
 END;
